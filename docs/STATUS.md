@@ -26,3 +26,10 @@ Even a `QUERY_RECONCILED` result is not evidence of complete coverage of the pla
 - Add Jooble regional API with a guarded lifetime key quota (500 total free calls).
 - Broaden search queries and report completeness per query, plus active/closed status verification.
 - Avoid scheduled production runs until coverage/error metrics and host setup have been validated.
+
+## Phase 3 (2026-10-09)
+
+- Djinni: public filtered RSS verified live — 54 items and one 1,891-character detail. Exhaustiveness and filter accuracy remain UNVERIFIED.
+- Jooble: official Ukrainian regional API client implemented, with explicit one-shot command and PostgreSQL lifetime quota reservations. No live API calls without user key and prior usage declaration.
+- Jooble produces search previews, not complete descriptions; all Jooble runs remain PARTIAL_SNIPPET_ONLY.
+- Work.ua remains HTTP 403 and disabled by default. No bypass.
