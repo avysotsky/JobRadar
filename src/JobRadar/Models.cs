@@ -26,6 +26,8 @@ public sealed class RadarOptions
  public bool EnabledDou { get; set; } = true;
  public bool EnabledDjinni { get; set; } = true;
  public bool EnabledRobota { get; set; } = true;
+ // Full-text API returned HTTP 403 in the owner's live crawl. Keep discovery available.
+ public bool EnabledRobotaDetails { get; set; } = true;
  public string[] RobotaQueries { get; set; } = [".net", "c-sharp", "backend"];
  public bool EnabledWorkUa { get; set; } = false; // Requires source permission/live verification
  public string[] WorkUaQueries { get; set; } = ["c#", ".net", "backend"];
