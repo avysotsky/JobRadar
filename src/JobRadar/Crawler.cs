@@ -25,7 +25,10 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
    // A 403 on Robota company details is not evidence the job was removed.
    // Continue index discovery, but never request a disabled full-text endpoint.
    if(source is RobotaApiSource && !options.EnabledRobotaDetails)
+   {
     uncertain=true;
+    error="Robota full-text disabled after observed HTTP 403; only listing/preview coverage available";
+   }
    bool reconciled=false;
    var seen=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
    int maxPages=source.IsSinglePageFeed?1:Math.Max(1,options.MaxPagesPerSource);
