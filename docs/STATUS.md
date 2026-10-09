@@ -1,11 +1,9 @@
-# Phase 1 status
+# Phase 1 status (updated 2026-10-09)
 
-Prototype imported to GitHub on 2026-10-09.
-
-- DOU: first page only; pagination is not implemented; coverage intentionally marked PARTIAL.
-- Djinni: page-based URL and selectors are hypotheses pending validation on live responses.
+- DOU: uses advertised public RSS endpoint with .NET/remote query. RSS may be truncated. Marked PARTIAL until reconciled with total count. RSS parsing has synthetic fixture tests.
+- Djinni: explicit .NET remote search with numbered pages. Selectors still require live validation; query and extraction coverage are not guaranteed.
 - Robota.ua / Work.ua / Jooble: not implemented.
-- Actual vacancy publication and active status: unverified.
-- Automated tests cover small synthetic fixtures, not real page snapshots.
-- GitHub Actions is configured to build and test .NET 10; do not claim passing CI until workflow result is checked.
-- Never report zero matching jobs as exhaustive unless ingestion and coverage are validated.
+- Source-level report statuses: FAILED, PARTIAL, UNVERIFIED_COVERAGE. No status currently guarantees exhaustive indexing.
+- Parser and storage workflows must be exercised against real page snapshots and a PostgreSQL test instance.
+- .NET 10 CI configured; passing build and tests not confirmed.
+- HTTP 403/429 and parse failures must be surfaced rather than represented as no vacancies.
