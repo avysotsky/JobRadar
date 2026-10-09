@@ -5,6 +5,7 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
  {
   var started=DateTimeOffset.UtcNow;
   var summaries=new List<SourceResult>();
+  var robotaDetails=new RobotaCompanyDetails(fetcher);
   foreach(var source in sources)
   {
    var pages=0;var refs=0;var success=0;var fail=0;int? total=null;
@@ -41,12 +42,20 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
      await storage.SaveDiscovered(job,ct);
      try
      {
-      var detailHtml=await fetcher.GetAsync(job.Url,ct);
-      var description=Parsers.Description(source.Name,detailHtml);
-      if(description.Length<80)throw new InvalidDataException("Vacancy detail missing or too short");
-      var published=source.Name.StartsWith("robota-",StringComparison.OrdinalIgnoreCase)?RobotaParser.PublishedDate(detailHtml):null;
-      var enrichedJob=job with { PublishedAt = job.PublishedAt ?? published };
-      await storage.Save(new JobDetail(enrichedJob,description,Parsers.OpenStatus(detailHtml),DateTimeOffset.UtcNow),ct);
+      if(source is RobotaApiSource)
+      {
+       var detail=await robotaDetails.GetAsync(job,ct);
+       if(detail.Description.Length<80)throw new InvalidDataException("Robota API detail missing or too short");
+       var enriched=job with { PublishedAt=job.PublishedAt??detail.PublishedAt };
+       await storage.Save(new JobDetail(enriched,detail.Description,null,DateTimeOffset.UtcNow),ct);
+      }
+      else
+      {
+       var detailHtml=await fetcher.GetAsync(job.Url,ct);
+       var description=Parsers.Description(source.Name,detailHtml);
+       if(description.Length<80)throw new InvalidDataException("Vacancy detail missing or too short");
+       await storage.Save(new JobDetail(job,description,Parsers.OpenStatus(detailHtml),DateTimeOffset.UtcNow),ct);
+      }
       success++;
      }
      catch(Exception e) when(!ct.IsCancellationRequested)
