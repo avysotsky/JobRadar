@@ -1,6 +1,13 @@
 name: Public-source diagnostics
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - jobradar/phase3-djinni-rss-jooble-guarded
+    paths:
+      - 'src/JobRadar/Sources.cs'
+      - 'src/JobRadar/Program.cs'
+      - '.github/workflows/source-diagnostics.yml'
 permissions:
   contents: read
 jobs:
@@ -10,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        site: [dou, workua]
+        site: [djinni, dou]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
