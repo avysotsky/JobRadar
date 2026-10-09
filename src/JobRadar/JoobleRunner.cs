@@ -52,7 +52,8 @@ public static class JoobleRunner
    }
    catch(Exception ex) when(!ct.IsCancellationRequested)
    {
-    var summary=ex.GetType().Name+": "+ex.Message;
+    var safeMessage=ex.Message.Replace(key,"[REDACTED]",StringComparison.Ordinal);
+    var summary=ex.GetType().Name+": "+safeMessage;
     // Do not include key-bearing API endpoint in storage/logging.
     await storage.SaveError("jooble","jooble-query:"+keywords,summary,ct);
     errors.Add("Query '"+keywords+"' failed: "+summary);
