@@ -1,0 +1,40 @@
+name: jobradar
+services:
+  database:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: jobradar
+      POSTGRES_DB: jobradar
+      POSTGRES_PASSWORD: ${JOBRADAR_POSTGRES_PASSWORD:?Set JOBRADAR_POSTGRES_PASSWORD in .env}
+    volumes:
+      - jobradar-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobradar -d jobradar"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - internal
+  collector:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    init: true
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      JOBRADAR_DB: "Host=database;Port=5432;Database=jobradar;Username=jobradar;Password=${JOBRADAR_POSTGRES_PASSWORD:?Set JOBRADAR_POSTGRES_PASSWORD}"
+    volumes:
+      - jobradar-reports:/app/reports
+    stop_grace_period: 30s
+    networks:
+      - internal
+networks:
+  internal:
+    internal: false
+volumes:
+  jobradar-postgres:
+  jobradar-reports:
