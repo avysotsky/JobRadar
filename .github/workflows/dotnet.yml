@@ -31,3 +31,7 @@ jobs:
       - run: dotnet restore tests/JobRadar.Tests/JobRadar.Tests.csproj
       - run: dotnet build tests/JobRadar.Tests/JobRadar.Tests.csproj --no-restore --configuration Release
       - run: dotnet test tests/JobRadar.Tests/JobRadar.Tests.csproj --no-build --configuration Release
+      - name: Smoke PostgreSQL pending audit CLI
+        env:
+          JOBRADAR_DB: Host=localhost;Port=5432;Database=jobradar;Username=jobradar;Password=jobradar
+        run: dotnet run --project src/JobRadar/JobRadar.csproj --configuration Release --no-build -- --pending-status
