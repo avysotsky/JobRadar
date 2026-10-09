@@ -92,12 +92,21 @@ VALUES (@source,@url,@title,@company,@published,@description,@open,@seen,@full,@
 ON CONFLICT(source,url) DO UPDATE SET title=excluded.title,company=COALESCE(excluded.company,jobs.company),
  published_at=COALESCE(excluded.published_at,jobs.published_at),
  description=CASE WHEN excluded.description<>'' THEN excluded.description ELSE jobs.description END,
- open_status=CASE WHEN excluded.status_checked_at IS NOT NULL THEN excluded.open_status
+ open_status=CASE WHEN excluded.status_checked_at IS NOT NULL
+                    AND (jobs.status_checked_at IS NULL
+                      OR excluded.status_checked_at>=jobs.status_checked_at)
+                  THEN excluded.open_status
                   ELSE COALESCE(excluded.open_status,jobs.open_status) END,
- last_seen=excluded.last_seen,
+ last_seen=GREATEST(excluded.last_seen,jobs.last_seen),
  full_text_at=COALESCE(excluded.full_text_at,jobs.full_text_at),
- status_checked_at=COALESCE(excluded.status_checked_at,jobs.status_checked_at),
- status_evidence=COALESCE(excluded.status_evidence,jobs.status_evidence);
+ status_checked_at=CASE WHEN excluded.status_checked_at IS NOT NULL
+                         AND (jobs.status_checked_at IS NULL
+                           OR excluded.status_checked_at>=jobs.status_checked_at)
+                         THEN excluded.status_checked_at ELSE jobs.status_checked_at END,
+ status_evidence=CASE WHEN excluded.status_checked_at IS NOT NULL
+                         AND (jobs.status_checked_at IS NULL
+                           OR excluded.status_checked_at>=jobs.status_checked_at)
+                      THEN excluded.status_evidence ELSE jobs.status_evidence END;
 INSERT INTO job_status_checks(source,url,checked_at,open_status,evidence)
 SELECT @source,@url,@seen,@open,@evidence WHERE @evidence IS NOT NULL;
 DELETE FROM fetch_errors WHERE source=@source AND url=@url;
