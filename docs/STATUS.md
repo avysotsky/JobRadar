@@ -50,3 +50,14 @@ Even a `QUERY_RECONCILED` result is not evidence of complete coverage of the pla
 - Probe on `backend`: 36 reported, 35 extracted, page 1 empty. The crawler now records RawRecords and DroppedRecords and marks queries PARTIAL on parse loss.
 - Company JSON `totalVacanciesCount` is compared to filteredVacancies length; missing jobs in potentially truncated (100-item) responses remain unknown, not closed.
 - Multi-page reconciliation, duplicate pages, raw record drops and company caps covered in xUnit and PostgreSQL tests.
+
+## Phase 6: multi-query RSS, container deployment and full-text export — 2026-10-09
+
+- Extra DOU C# public RSS search returned 25 references; extra Djinni C# RSS search returned 100. Both sources remain PARTIAL because the feed cap and remote filter accuracy are not exhaustively verified.
+- Canonical per-site vacancy IDs and `job_queries` preserve search provenance without duplicating overlapping job records.
+- `DetailRefreshHours` caching avoids repeated full-text network calls for recently read vacancies, with `CachedDetails` in source run reports.
+- Added `--export-jsonl` with up to 2,000 records by default, including descriptions, query provenance and explicit HasFullText flag.
+- Added multi-stage non-root .NET 10 Dockerfile and Docker Compose with persistent PostgreSQL and report volumes. PostgreSQL is not exposed on the host.
+- Verified Docker Compose build, database startup, pending-status CLI and JSONL export in GitHub Actions with a disposable test password.
+- GitHub Actions **does not** deploy this collector on the user's machine or provide persistent hosted storage; user-controlled Docker host/credentials are still required.
+- Robota company feed may still cap at 100; Work.ua HTTP 403 remains unresolved, and no site-wide completeness guarantee exists.

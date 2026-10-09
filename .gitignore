@@ -4,3 +4,7 @@ reports/
 *.user
 .env
 appsettings.Local.json
+# Generated reports and full vacancy exports (never publish accidentally)
+jobradar-reports/
+exports/
+*.jsonl
