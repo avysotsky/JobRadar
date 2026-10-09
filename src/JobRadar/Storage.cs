@@ -6,6 +6,10 @@ public sealed class Storage(string connectionString)
  public async Task Initialize(CancellationToken ct)
  {
   await using var c=new NpgsqlConnection(connectionString);await c.OpenAsync(ct);
+  await using var tx=await c.BeginTransactionAsync(ct);
+  // Serialize schema initialization across parallel workers and test processes.
+  await using(var lockCmd=new NpgsqlCommand("SELECT pg_advisory_xact_lock(872349217)",c,tx))
+   await lockCmd.ExecuteNonQueryAsync(ct);
   const string sql="""
 CREATE TABLE IF NOT EXISTS jobs (
  source text NOT NULL, url text NOT NULL, title text NOT NULL,
@@ -26,7 +30,8 @@ CREATE TABLE IF NOT EXISTS fetch_errors (
  last_error text NOT NULL, last_attempt timestamptz NOT NULL,
  PRIMARY KEY(source,url));
 """;
-  await using var cmd=new NpgsqlCommand(sql,c);await cmd.ExecuteNonQueryAsync(ct);
+  await using var cmd=new NpgsqlCommand(sql,c,tx);await cmd.ExecuteNonQueryAsync(ct);
+  await tx.CommitAsync(ct);
  }
  public async Task SaveDiscovered(JobRef job,CancellationToken ct,string? queryName=null)
  {
