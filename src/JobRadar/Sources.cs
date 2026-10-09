@@ -6,7 +6,7 @@ public interface IJobSource
  Uri Home {get;}
  string ListingUrl(int page);
  IReadOnlyList<JobRef> ParseListings(string html);
- // If true, an unverified cap on RSS entries means the run cannot claim exhaustive coverage.
+ // Feed pages cannot support exhaustive coverage without a count reconciliation.
  bool IsSinglePageFeed => false;
 }
 public sealed class DouSource:IJobSource
@@ -14,7 +14,6 @@ public sealed class DouSource:IJobSource
  public string Name=>"dou";
  public Uri Home=>new("https://jobs.dou.ua/");
  public bool IsSinglePageFeed=>true;
- // Public RSS URL advertised directly by the DOU search results.
  public string ListingUrl(int page)=>page==0
    ? "https://jobs.dou.ua/vacancies/feeds/?category=.NET&remote=&search=.NET"
    : throw new NotSupportedException("DOU RSS feed has no documented exhaustive pagination");
