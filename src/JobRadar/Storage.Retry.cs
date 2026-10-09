@@ -89,8 +89,8 @@ LIMIT @limit;
   await using var c=new NpgsqlConnection(connectionString);await c.OpenAsync(ct);
   await using var cmd=new NpgsqlCommand(
    "INSERT INTO retry_runs(started_at,ended_at,report) VALUES(@s,@e,@r)",c);
-  cmd.Parameters.AddWithValue("s",report.StartedAt);
-  cmd.Parameters.AddWithValue("e",report.EndedAt);
+  cmd.Parameters.AddWithValue("s",NpgsqlDbType.TimestampTz,report.StartedAt.ToUniversalTime());
+  cmd.Parameters.AddWithValue("e",NpgsqlDbType.TimestampTz,report.EndedAt.ToUniversalTime());
   cmd.Parameters.AddWithValue("r",NpgsqlDbType.Jsonb,
     System.Text.Json.JsonSerializer.Serialize(report));
   await cmd.ExecuteNonQueryAsync(ct);

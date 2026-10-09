@@ -25,8 +25,11 @@ public static class TriageExport
  public static async Task<TriageExportResult> WriteAsync(
   Storage storage,string directory,int maxRecords,CancellationToken ct)
  {
-  var totalStored=await storage.CountVacanciesForTriageAsync(ct);
+  // Read the bounded export first: concurrent ingestion may append new rows
+  // between independent SQL statements. Counting afterwards ensures that an
+  // append-only jobs table is not undercounted relative to evaluated records.
   var records=await storage.ReadVacanciesForTriageAsync(maxRecords,ct);
+  var totalStored=await storage.CountVacanciesForTriageAsync(ct);
   var evaluated=records.Select(VacancyTriage.Assess)
    .OrderBy(x=>x.Bucket).ThenByDescending(x=>x.Score)
    .ThenByDescending(x=>x.Vacancy.LastSeen).ToArray();
