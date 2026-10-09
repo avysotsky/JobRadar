@@ -56,6 +56,11 @@ public static class VacancyEligibility
  private static readonly Regex DesktopTitle = new(
   @"\b(?:wpf|winforms|windows\s+forms|desktop(?:\s+application)?\s+developer)\b",
   Flags);
+ private static readonly Regex DesktopOptional = new(
+  @"\b(?:wpf|winforms)\b.{0,35}\b(?:not\s+(?:mandatory|required)|nice\s+to\s+have|optional)\b"
+  + @"|\b(?:nice\s+to\s+have|optional)\b.{0,25}\b(?:wpf|winforms)\b",
+  Flags);
+
  private static readonly Regex DesktopMandatory = new(
   @"\b(?:mandatory|required|must\s+have|essential|обов['’]язков[а-яіїє]*|"
   + @"обязательн[а-я]*)\b.{0,35}\b(?:wpf|winforms)\b"
@@ -70,7 +75,8 @@ public static class VacancyEligibility
   bool location=LimitedRemote.IsMatch(text);
   bool relocation=Relocation.IsMatch(text);
   bool backend=Backend.IsMatch(text);
-  bool desktop=DesktopTitle.IsMatch(normalizedTitle) || DesktopMandatory.IsMatch(text);
+  bool desktop=DesktopTitle.IsMatch(normalizedTitle) ||
+   (DesktopMandatory.IsMatch(text) && !DesktopOptional.IsMatch(text));
 
   if(location)warnings.Add("Есть ограничение страны проживания/работы: доступность из Украины требует проверки");
   if(relocation)warnings.Add("Указана обязательная релокация: удалённость из Украины требует проверки");
