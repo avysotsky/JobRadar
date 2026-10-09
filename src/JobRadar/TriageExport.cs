@@ -8,7 +8,8 @@ public sealed record TriageExportResult(
  string AuditFile,string ShortlistFile,string ReviewFile,int Evaluated,
  int LikelyFit,int NeedsReview,int Excluded,int Shortlisted,
  int HighScoreNeedsReview,int GeoRestrictedNeedsReview,
- int IncompleteTextNeedsReview,int UnverifiedOpenStatus);
+ int IncompleteTextNeedsReview,int UnverifiedOpenStatus,
+ long TotalStored,long OmittedByLimit);
 
 public static class TriageExport
 {
@@ -24,6 +25,7 @@ public static class TriageExport
  public static async Task<TriageExportResult> WriteAsync(
   Storage storage,string directory,int maxRecords,CancellationToken ct)
  {
+  var totalStored=await storage.CountVacanciesForTriageAsync(ct);
   var records=await storage.ReadVacanciesForTriageAsync(maxRecords,ct);
   var evaluated=records.Select(VacancyTriage.Assess)
    .OrderBy(x=>x.Bucket).ThenByDescending(x=>x.Score)
@@ -57,6 +59,7 @@ public static class TriageExport
     likely,pending.Length,evaluated.Count(x=>x.Bucket==FitBucket.Excluded),likely,
     pending.Count(x=>x.Score>=65),restricted,
     pending.Count(x=>!x.Vacancy.HasFullText),
-    evaluated.Count(x=>x.Vacancy.IsOpen is null));
+    evaluated.Count(x=>x.Vacancy.IsOpen is null),
+    totalStored,Math.Max(0L,totalStored-evaluated.Length));
  }
 }
