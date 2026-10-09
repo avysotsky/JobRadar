@@ -38,7 +38,9 @@ public sealed class RobotaApiSource(string query) : IJobSource
    if(DateTimeOffset.TryParse(GetString(item,"date"),CultureInfo.InvariantCulture,DateTimeStyles.AssumeUniversal,out var time))
      published=time;
    string url="https://robota.ua/company"+companyId+"/vacancy"+jobId;
-   list.Add(new JobRef(Name,url,title,company,published));
+   var previewHtml=GetString(item,"shortDescription")??"";
+   var preview=Parsers.Clean(System.Text.RegularExpressions.Regex.Replace(previewHtml,@"<[^>]+>"," "));
+   list.Add(new JobRef(Name,url,title,company,published,preview.Length==0?null:preview));
   }
   return list.DistinctBy(x=>x.Url).ToArray();
  }

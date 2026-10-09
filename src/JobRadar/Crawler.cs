@@ -37,6 +37,8 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
     foreach(var job in fresh)
     {
      refs++;
+     // Save identifiers and previews before detail retrieval so failures cannot erase discovery.
+     await storage.SaveDiscovered(job,ct);
      try
      {
       var detailHtml=await fetcher.GetAsync(job.Url,ct);
