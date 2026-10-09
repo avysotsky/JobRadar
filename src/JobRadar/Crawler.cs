@@ -42,7 +42,9 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
       var detailHtml=await fetcher.GetAsync(job.Url,ct);
       var description=Parsers.Description(source.Name,detailHtml);
       if(description.Length<80)throw new InvalidDataException("Vacancy detail missing or too short");
-      await storage.Save(new JobDetail(job,description,Parsers.OpenStatus(detailHtml),DateTimeOffset.UtcNow),ct);
+      var published=source.Name.StartsWith("robota-",StringComparison.OrdinalIgnoreCase)?RobotaParser.PublishedDate(detailHtml):null;
+      var enrichedJob=job with { PublishedAt = job.PublishedAt ?? published };
+      await storage.Save(new JobDetail(enrichedJob,description,Parsers.OpenStatus(detailHtml),DateTimeOffset.UtcNow),ct);
       success++;
      }
      catch(Exception e) when(e is not OperationCanceledException)

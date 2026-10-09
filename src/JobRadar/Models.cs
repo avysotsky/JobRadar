@@ -14,4 +14,6 @@ public sealed class RadarOptions
  public string OutputDirectory { get; set; } = "reports";
  public bool EnabledDou { get; set; } = true;
  public bool EnabledDjinni { get; set; } = true;
+ public bool EnabledRobota { get; set; } = true;
+ public string[] RobotaQueries { get; set; } = [".net", "c-sharp", "backend"];
 }

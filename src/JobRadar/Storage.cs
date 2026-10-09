@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS fetch_errors (
 INSERT INTO jobs(source,url,title,company,published_at,description,open_status,last_seen,full_text_at)
 VALUES (@source,@url,@title,@company,@published,@description,@open,@seen,@full)
 ON CONFLICT(source,url) DO UPDATE SET title=excluded.title,company=COALESCE(excluded.company,jobs.company),
+ published_at=COALESCE(excluded.published_at,jobs.published_at),
  description=CASE WHEN excluded.description<>'' THEN excluded.description ELSE jobs.description END,
  open_status=COALESCE(excluded.open_status,jobs.open_status),last_seen=excluded.last_seen,
  full_text_at=COALESCE(excluded.full_text_at,jobs.full_text_at);

@@ -9,6 +9,7 @@ try{await storage.Initialize(CancellationToken.None);}catch(Exception e){Console
 using var http=new HttpClient{Timeout=TimeSpan.FromSeconds(options.TimeoutSeconds)};
 http.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
 var sources=new List<IJobSource>();if(options.EnabledDou)sources.Add(new DouSource());if(options.EnabledDjinni)sources.Add(new DjinniSource());
+if(options.EnabledRobota)foreach(var term in options.RobotaQueries.Distinct(StringComparer.OrdinalIgnoreCase))sources.Add(new RobotaSource(term));
 var crawler=new Crawler(new HttpFetcher(http,options.DelayMilliseconds),storage,options);
 var once=args.Contains("--once");
 async Task Run(CancellationToken ct)
