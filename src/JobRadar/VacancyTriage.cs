@@ -98,8 +98,8 @@ public static class VacancyTriage
    warnings.Add("Встречаются WPF / cloud / Kubernetes — проверить требования");
   if(!job.HasFullText)warnings.Add("Полный текст не получен: оценка только по анонсу");
   if(!job.HasFullText && !Net.IsMatch(all))warnings.Add("Короткий анонс без .NET не является доказательством нерелевантности");
-  var verifiedClosure=job.IsOpen==false && job.StatusEvidence is
-    "html:explicit-closed-banner" or "html:standalone-closed-message";
+  var verifiedClosure=job.IsOpen==false &&
+    job.StatusEvidence is ("html:explicit-closed-banner" or "html:standalone-closed-message");
   if(verifiedClosure)warnings.Add("Источник явно обозначил вакансию закрытой — свидетельство сохранено");
   else if(job.IsOpen==false)warnings.Add("Исторический признак закрытия без проверяемого свидетельства — требуется проверка");
   if(job.IsOpen is null)warnings.Add("Актуальность вакансии не подтверждена");
