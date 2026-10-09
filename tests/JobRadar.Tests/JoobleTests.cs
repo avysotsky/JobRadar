@@ -9,12 +9,7 @@ public sealed class JoobleTests
 {
  [Fact] public void ParsesOfficialApiFieldsWithoutConfusingUpdatedWithPublished()
  {
-  const string response="""{"totalCount":100,"jobs":[
-   {"id":1,"title":"Middle .NET Developer","link":"https://ua.jooble.org/jdp/12345",
-    "snippet":"ASP.NET Core, PostgreSQL","company":"Example Ltd","updated":"2026-10-09T12:00:00Z"},
-   {"id":2,"title":"duplicate","link":"https://ua.jooble.org/jdp/12345","snippet":"test"},
-   {"id":3,"title":"bad","link":"http://localhost/private"}
-  ]}""";
+  const string response="""{"totalCount":100,"jobs":[{"id":1,"title":"Middle .NET Developer","link":"https://ua.jooble.org/jdp/12345","snippet":"ASP.NET Core, PostgreSQL","company":"Example Ltd","updated":"2026-10-09T12:00:00Z"},{"id":2,"title":"duplicate","link":"https://ua.jooble.org/jdp/12345","snippet":"test"},{"id":3,"title":"bad","link":"http://localhost/private"}]}""";
   var r=JoobleApi.ParseResponse(response);
   Assert.Equal(100,r.TotalCount);
   var job=Assert.Single(r.Jobs);
