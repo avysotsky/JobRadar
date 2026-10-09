@@ -35,8 +35,8 @@ dotnet run --project src/JobRadar/JobRadar.csproj -- --once
 
 ## Query coverage and alarms
 
-- The crawler reads the last 10 stored `crawl_runs`, chooses the latest nonfailed reference count for each matching source.
-- A 50%+ drop from a prior count of >=20 sets `CoverageWarning` and `PARTIAL`, even if the provider's reported total reconciles.
+- The crawler reads the last 10 stored `crawl_runs`, chooses the maximum nonfailed reference count for each matching source.
+- A 50% or greater drop from a prior count of >=20 sets `CoverageWarning` and `PARTIAL`, even if the provider's reported total reconciles.
 - This catches suspicious source regressions; it does not establish actual coverage completeness. A site can consistently return a capped RSS feed and never trigger this rule.
 
 ## Verification

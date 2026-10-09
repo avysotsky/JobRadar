@@ -5,8 +5,8 @@ namespace JobRadar;
 public sealed partial class Storage
 {
  /// <summary>
- /// Compare with the most recent source reports. We read several prior crawl runs
- /// so one failed run cannot erase a previously valid baseline.
+ /// Compare with the last 10 source reports. We read several prior crawl runs
+ /// and use the largest valid recent count so a single anomalous low run does not reset the baseline.
  /// </summary>
  public async Task<IReadOnlyDictionary<string,int>> GetPreviousReferenceCountsAsync(CancellationToken ct)
  {
@@ -31,7 +31,8 @@ public sealed partial class Storage
      var source=name.GetString()!;
      if(item.TryGetProperty("Status",out var status) &&
         status.ToString()=="FAILED")continue;
-     counts.TryAdd(source,value);
+     if(!counts.TryGetValue(source,out var previous) || value>previous)
+      counts[source]=value;
     }
    }
    catch(JsonException) { /* outdated or malformed report cannot corrupt a crawl */ }

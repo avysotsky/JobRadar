@@ -7,6 +7,7 @@ public sealed class CoverageDriftTests
  public void LargeSuddenDropIsFlagged()
  {
   Assert.Contains("Coverage anomaly",CoverageDrift.Warning(80,20));
+  Assert.Contains("Coverage anomaly",CoverageDrift.Warning(80,40));
   Assert.Contains("Coverage anomaly",CoverageDrift.Warning(40,0));
  }
  [Fact]
