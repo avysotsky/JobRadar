@@ -27,7 +27,7 @@ public static class VacancyTriage
  private static readonly Regex SeniorTitle = new(
   @"\b(?:senior|sr\.?|principal|staff|lead|architect|сеньйор|сеньор|ведущий|провідний)\b",Flags);
  private static readonly Regex Hybrid = new(
-  @"\bhybrid(?:\s+(?:work|schedule|format|role|position|office))?\b|гібридн|гибридн|(?:\b[1-5]\b|\bone\b|\btwo\b|\bthree\b)\s*(?:days?|дні|дня|дней|днів|днi)\s*(?:per\s+week|a\s+week|на\s+тиждень|в\s+неделю)?\s*(?:в|у|in|at)?\s*(?:the\s+)?(?:офіс|офис|office)|(?:офіс|офис|office).{0,20}\b[1-5]\b\s*(?:days?|дн)|office\s+attendance\s+required",Flags);
+  @"\bhybrid\b(?!\s+(?:cloud|architecture|systems?|storage|infrastructure|workloads?))|гібридн[а-яіїє]*\s+(?:формат|графік|робот|офіс|режим)|гибридн[а-я]*\s+(?:график|работ|офис|режим)|(?:\b[1-5]\b|\bone\b|\btwo\b|\bthree\b)\s*(?:days?|дні|дня|дней|днів|днi)\s*(?:per\s+week|a\s+week|на\s+тиждень|в\s+неделю)?\s*(?:в|у|in|at)?\s*(?:the\s+)?(?:офіс|офис|office)|(?:офіс|офис|office).{0,20}\b[1-5]\b\s*(?:days?|дн)|office\s+attendance\s+required",Flags);
  private static readonly Regex Onsite = new(
   @"\bon[- ]site\b|\bon\s+site\b|тільки\s+(?:в\s+)?офіс|только\s+(?:в\s+)?офис|office[- ]only|office\s+only|must\s+(?:work|be).{0,25}(?:in\s+)?(?:the\s+)?office|офісн(?:а|ий|ої)\s+робот|офисн(?:ая|ый)\s+работ",Flags);
  private static readonly Regex NoRemote = new(

@@ -25,8 +25,8 @@ public sealed class TriageIntegrationTests
   await store.Save(new JobDetail(a,good,null,DateTimeOffset.UtcNow),CancellationToken.None);
   await store.Save(new JobDetail(b,office,null,DateTimeOffset.UtcNow),CancellationToken.None);
   var db=await store.ReadVacanciesForTriageAsync(50000,CancellationToken.None);
-  var goodOne=VacancyTriage.Assess(Assert.Single(db.Where(x=>x.Url==a.Url)));
-  var badOne=VacancyTriage.Assess(Assert.Single(db.Where(x=>x.Url==b.Url)));
+  var goodOne=VacancyTriage.Assess(Assert.Single(db,x=>x.Url==a.Url));
+  var badOne=VacancyTriage.Assess(Assert.Single(db,x=>x.Url==b.Url));
   Assert.Equal(FitBucket.LikelyFit,goodOne.Bucket);
   Assert.Equal(FitBucket.Excluded,badOne.Bucket);
   Assert.Contains("C#",goodOne.Vacancy.Queries);
