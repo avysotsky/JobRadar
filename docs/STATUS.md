@@ -1,11 +1,24 @@
-# Phase 1 status (updated 2026-10-09)
+# Implementation status — 2026-10-09
 
-- DOU: uses advertised public RSS endpoint with .NET/remote query. RSS may be truncated. Marked PARTIAL until reconciled with total count. RSS parsing has synthetic fixture tests.
-- Djinni: explicit .NET remote search with numbered pages. Selectors still require live validation; query and extraction coverage are not guaranteed.
-- Robota.ua: public-search adapter and detail extraction are implemented as a draft; query pagination, HTML selectors and full-text quality have synthetic fixture tests only and are not live-validated.\n- Work.ua / Jooble: not implemented.
-- Source-level report statuses: FAILED, PARTIAL, UNVERIFIED_COVERAGE. No status currently guarantees exhaustive indexing.
-- Parser and storage workflows must be exercised against real page snapshots and a PostgreSQL test instance.
-- .NET 10 CI configured; passing build and tests not confirmed.
-- HTTP 403/429 and parse failures must be surfaced rather than represented as no vacancies.
+## Verified
+- .NET 10 restore/build and xUnit passed on GitHub Actions; PostgreSQL 16 service tests exercise persistence.
+- Robota.ua public search JSON returned 56 discovered records for one `.net` query, with a reported total of 56 in a live test.
+- Robota.ua company published-vacancies JSON supplied a full body for publicly posted Credit Agricole vacancy `11287397`. End-to-end smoke extracted **9,835 readable characters** and date **2026-10-05**.
+- Robota API source persists discovered metadata and preview before attempting full text; query totals and failures are reported.
+- Robota company feed downloaded once per company per crawl, in-memory cached.
 
-- Robota API search: public JSON endpoint `https://api.rabota.ua/vacancy/search` is now preferred; real production response and its availability remain subject to live smoke validation. Older HTML search scraper retained as fallback code only. This is NOT evidence of exhaustive discovery.
+## Not proven / remaining
+- No exhaustive all-queries/all-sites vacancy coverage guarantee.
+- A company feed can have a 100-record cap or omit a searched vacancy. Such detail requests fail explicitly; they are **not** marked complete.
+- Search API paging, query parameter semantics and filtering need broad live validation on different queries, cities and page counts.
+- DOU RSS may be truncated; no independent exhaustive count reconciliation.
+- Djinni HTML selectors and paging have not been validated against live site responses.
+- Work.ua, Jooble and further sources not yet integrated.
+- Full-text completeness beyond the tested Robota fixture, deduplication across keyword queries/sources, and independent active-vacancy verification remain to implement.
+- Integration tests use a disposable PostgreSQL 16 service in GitHub Actions; local Windows and Linux environments not verified.
+- Source statuses `FAILED`, `PARTIAL` and `UNVERIFIED_COVERAGE` are **not** claims of exhaustive completeness.
+
+## Controls
+- Failed full text stays in `fetch_errors`; metadata stays in `jobs` (without `full_text_at`).
+- HTTP 403/404 are not retried; HTTP 429 respects bounded Retry-After; source errors are not silently converted into zero jobs.
+- No CAPTCHA or login bypassing; use publicly accessible information and respect source restrictions.
