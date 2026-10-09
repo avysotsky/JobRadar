@@ -13,7 +13,7 @@ public static class RobotaPagingSmoke
   using var http=new HttpClient{Timeout=TimeSpan.FromSeconds(options.TimeoutSeconds)};
   http.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
   var fetcher=new HttpFetcher(http,Math.Max(options.DelayMilliseconds,1000));
-  var source=new RobotaApiSource("backend");
+  var source=new RobotaApiSource("менеджер");
   var seen=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
   var pages=new List<object>();
   var total=-1;
@@ -36,7 +36,7 @@ public static class RobotaPagingSmoke
    }
    if(total>59 && pages.Count<2)throw new InvalidDataException("Multi-page query returned fewer than two pages");
    if(total>59 && seen.Count<=59)throw new InvalidDataException("No evidence next page advances beyond first 59 records");
-   var result=new {status="PASS",query="backend",total,uniqueIds=seen.Count,pages,
+   var result=new {status="PASS",query="менеджер",total,uniqueIds=seen.Count,pages,
        coverage=seen.Count==total?"QUERY_ID_RECONCILED":"PARTIAL_SAMPLE_ONLY"};
    Console.WriteLine(JsonSerializer.Serialize(result,new JsonSerializerOptions{WriteIndented=true}));
    return 0;
