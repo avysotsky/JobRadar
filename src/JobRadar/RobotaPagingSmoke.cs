@@ -28,9 +28,10 @@ public static class RobotaPagingSmoke
     if(reported is null)throw new InvalidDataException("Missing or malformed source total on page "+p);
     total=total<0?reported.Value:total;
     if(total!=reported.Value)throw new InvalidDataException("API total differs across page snapshots");
+    var raw=source.RawDocumentCount(response);
     var overlap=0;
     foreach(var item in batch)if(!seen.Add(item.Url))overlap++;
-    pages.Add(new {page=p,received=batch.Count,overlap,unique=seen.Count,
+    pages.Add(new {page=p,received=batch.Count,rawRecords=raw,droppedRecords=raw-batch.Count,overlap,unique=seen.Count,
      firstId=batch.FirstOrDefault()?.Url,lastId=batch.LastOrDefault()?.Url});
     if(batch.Count==0 || seen.Count>=total)break;
    }
