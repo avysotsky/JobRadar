@@ -44,6 +44,15 @@ public sealed class RobotaApiSource(string query) : IJobSource
   }
   return list.DistinctBy(x=>x.Url).ToArray();
  }
+ /// <summary>The number of raw records in the provider JSON page, before validation.</summary>
+ public int RawDocumentCount(string payload)
+ {
+  using var doc=JsonDocument.Parse(payload);
+  if(!doc.RootElement.TryGetProperty("documents",out var documents) ||
+     documents.ValueKind!=JsonValueKind.Array)
+   throw new InvalidDataException("Robota API response missing documents array");
+  return documents.GetArrayLength();
+ }
  public int? ReportedTotal(string payload)
  {
   using var doc=JsonDocument.Parse(payload);
