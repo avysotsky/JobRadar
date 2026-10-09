@@ -70,6 +70,23 @@ public sealed class Phase8EligibilityRegressionTests
   Assert.Equal(FitBucket.NeedsReview,assessment.Bucket);
  }
 
+ [Theory]
+ [InlineData("Mandatory relocation to Warsaw.",true)]
+ [InlineData("Required relocation to Poland.",true)]
+ [InlineData("Relocation is mandatory.",true)]
+ [InlineData("Relocation is required.",true)]
+ [InlineData("We require relocation to Warsaw.",true)]
+ [InlineData("No mandatory relocation is needed.",false)]
+ [InlineData("No required relocation.",false)]
+ [InlineData("Relocation support is available and optional.",false)]
+ public void MandatoryRelocationSignalDependsOnRequirementNotWordOrder(
+  string description,bool expected)
+ {
+  var signals=VacancyEligibility.Analyze("Middle C# Backend",
+   "Fully remote. ASP.NET Core Web API. "+description);
+  Assert.Equal(expected,signals.MandatoryRelocation);
+ }
+
  [Fact]
  public void NoDotNetInIncompletePreviewCannotProveIrrelevance()
  {
