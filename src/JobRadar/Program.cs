@@ -10,6 +10,8 @@ if(args.Contains("--smoke-workua"))return await PublicSourceSmoke.RunAsync(new W
 var cs=Environment.GetEnvironmentVariable("JOBRADAR_DB") ?? options.ConnectionString;
 var storage=new Storage(cs);
 try{await storage.Initialize(CancellationToken.None);}catch(Exception e){Console.Error.WriteLine("Database unavailable: "+e.Message);return 3;}
+if(args.Contains("--jooble-once"))
+ return await JoobleRunner.RunAsync(storage,options,CancellationToken.None);
 using var http=new HttpClient{Timeout=TimeSpan.FromSeconds(options.TimeoutSeconds)};
 http.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
 var sources=new List<IJobSource>();if(options.EnabledDou)sources.Add(new DouSource());if(options.EnabledDjinni)sources.Add(new DjinniSource());

@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS job_queries (
 CREATE TABLE IF NOT EXISTS crawl_runs (
  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, started_at timestamptz NOT NULL,
  ended_at timestamptz NOT NULL, report jsonb NOT NULL);
+CREATE TABLE IF NOT EXISTS api_request_budget (
+ provider text PRIMARY KEY, requests_used int NOT NULL,
+ upper_limit int NOT NULL CHECK(upper_limit BETWEEN 1 AND 500));
 CREATE TABLE IF NOT EXISTS fetch_errors (
  source text NOT NULL, url text NOT NULL, attempts int NOT NULL DEFAULT 1,
  last_error text NOT NULL, last_attempt timestamptz NOT NULL,
@@ -96,6 +99,39 @@ DELETE FROM fetch_errors WHERE source=@source AND url=@url;
   const string sql="""INSERT INTO fetch_errors(source,url,last_error,last_attempt) VALUES(@s,@u,@e,now()) ON CONFLICT(source,url) DO UPDATE SET attempts=fetch_errors.attempts+1,last_error=excluded.last_error,last_attempt=excluded.last_attempt""";
   await using var cmd=new NpgsqlCommand(sql,c);cmd.Parameters.AddWithValue("s",source);cmd.Parameters.AddWithValue("u",url);cmd.Parameters.AddWithValue("e",error);await cmd.ExecuteNonQueryAsync(ct);
  }
+ /// <summary>
+ /// Atomically reserves one lifetime call BEFORE an HTTP request is attempted.
+ /// 'alreadyUsed' must conservatively include requests spent outside JobRadar.
+ /// Consumes the reservation even if a request fails (fail closed).
+ /// </summary>
+ public async Task<int> ReserveJoobleCallAsync(int alreadyUsed,int allowedNew,CancellationToken ct,
+                                               string provider="jooble-ua")
+ {
+  if(alreadyUsed is <0 or >500 || allowedNew is <1 or >500 || string.IsNullOrWhiteSpace(provider))
+   throw new ArgumentOutOfRangeException(nameof(allowedNew));
+  await using var c=new NpgsqlConnection(connectionString);
+  await c.OpenAsync(ct);
+  const string sql="""
+INSERT INTO api_request_budget(provider,requests_used,upper_limit)
+SELECT @p,@prior+1,LEAST(500,@prior+@allow)
+WHERE @prior+1<=LEAST(500,@prior+@allow)
+ON CONFLICT(provider) DO UPDATE SET
+ requests_used=GREATEST(api_request_budget.requests_used,@prior)+1,
+ upper_limit=LEAST(api_request_budget.upper_limit,500,@prior+@allow)
+WHERE GREATEST(api_request_budget.requests_used,@prior) <
+      LEAST(api_request_budget.upper_limit,500,@prior+@allow)
+RETURNING requests_used;
+""";
+  await using var cmd=new NpgsqlCommand(sql,c);
+  cmd.Parameters.AddWithValue("p",provider);
+  cmd.Parameters.AddWithValue("prior",alreadyUsed);
+  cmd.Parameters.AddWithValue("allow",allowedNew);
+  var value=await cmd.ExecuteScalarAsync(ct);
+  if(value is not int used)
+   throw new InvalidOperationException("Jooble lifetime quota exhausted or blocked");
+  return used;
+ }
+
  public async Task SaveReport(CrawlReport report,CancellationToken ct)
  {
   await using var c=new NpgsqlConnection(connectionString);await c.OpenAsync(ct);
