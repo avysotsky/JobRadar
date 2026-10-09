@@ -26,7 +26,7 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
     try
     {
      listings=source.ParseListings(payload);
-     if(!source.IsSinglePageFeed)total??=Parsers.ReportedTotal(payload);
+     if(!source.IsSinglePageFeed)total??=source.ReportedTotal(payload);
     }
     catch(Exception e) when(e is not OperationCanceledException)
     {await storage.SaveError(source.Name,url,"Parse failure: "+e.Message,ct);error=e.Message;uncertain=true;break;}
