@@ -17,7 +17,7 @@ public sealed class RobotaPaginationTests
   var records=ids.Select(id=>new {id,notebookId=company,name="Middle .NET",companyName="Test"}).ToArray();
   string Page(int index)
   {
-   var subset=index switch {0=>records.Take(3),1=>records.Skip(3).Take(3),2=>records.Skip(6),_=>[]};
+   var subset=index switch {0=>records.Take(3),1=>records.Skip(3).Take(3),2=>records.Skip(6),_=>records.Take(0)};
    return JsonSerializer.Serialize(new {total=7,documents=subset});
   }
   var details=JsonSerializer.Serialize(new {totalVacanciesCount=7,filteredVacancies=
