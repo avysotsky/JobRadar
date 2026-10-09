@@ -35,9 +35,11 @@ public sealed class CrawlCoverageTests
   Assert.All(report.Sources,s=>{
     Assert.Equal("QUERY_RECONCILED",s.Status);
     Assert.Equal(1,s.ReferencesFound);
-    Assert.Equal(1,s.DetailsFetched);
+    Assert.Equal(1,s.DetailsFetched+s.CachedDetails);
     Assert.Equal(0,s.DetailsFailed);
   });
+  Assert.Equal(1,report.Sources.Sum(x=>x.DetailsFetched));
+  Assert.Equal(1,report.Sources.Sum(x=>x.CachedDetails));
   await using var db=new NpgsqlConnection(cs);
   await db.OpenAsync();
   await using(var cmd=new NpgsqlCommand(

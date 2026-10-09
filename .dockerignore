@@ -1,0 +1,12 @@
+.git
+.github
+**/bin
+**/obj
+**/.vs
+reports
+.env
+.env.*
+!.env.example
+*.user
+*.suo
+**/*.log

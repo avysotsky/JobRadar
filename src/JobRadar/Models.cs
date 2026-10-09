@@ -1,7 +1,7 @@
 namespace JobRadar;
 public sealed record JobRef(string Source, string Url, string Title, string? Company, DateTimeOffset? PublishedAt, string? Preview = null);
 public sealed record JobDetail(JobRef Job, string Description, bool? Open, DateTimeOffset FetchedAt);
-public sealed record SourceResult(string Source, int PagesFetched, int ReferencesFound, int DetailsFetched, int DetailsFailed, int? ReportedTotal, string Status, string? Error, int? PreviousReferences = null, string? CoverageWarning = null, int? RawRecords = null, int? DroppedRecords = null);
+public sealed record SourceResult(string Source, int PagesFetched, int ReferencesFound, int DetailsFetched, int DetailsFailed, int? ReportedTotal, string Status, string? Error, int? PreviousReferences = null, string? CoverageWarning = null, int? RawRecords = null, int? DroppedRecords = null, int CachedDetails = 0);
 public sealed record CrawlReport(DateTimeOffset StartedAt, DateTimeOffset EndedAt, IReadOnlyList<SourceResult> Sources);
 public sealed class RadarOptions
 {
@@ -18,6 +18,10 @@ public sealed class RadarOptions
  public int PendingBatchSize {get;set;} = 20;
  public int PendingMaxAttempts {get;set;} = 5;
  public int PendingMinimumAgeMinutes {get;set;} = 360;
+ public int ExportMaxRecords {get;set;} = 2000;
+ public int DetailRefreshHours {get;set;} = 24;
+ public string[] DouExtraKeywords {get;set;} = [];
+ public string[] DjinniExtraKeywords {get;set;} = [];
  public bool EnabledDou { get; set; } = true;
  public bool EnabledDjinni { get; set; } = true;
  public bool EnabledRobota { get; set; } = true;

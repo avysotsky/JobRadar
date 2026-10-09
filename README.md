@@ -2,15 +2,15 @@
 
 .NET 10 vacancy ingestion for Ukrainian software development jobs — [GitHub repository](https://github.com/avysotsky/JobRadar).
 
-**Status:** active prototype with verified Robota.ua and DOU partial-feed ingestion. This is **not** an exhaustive crawler; read the [coverage status](docs/STATUS.md) and [coverage design](docs/PHASE2_COVERAGE.md).
+**Status:** CI-tested ingestion prototype with Robota.ua, DOU and Djinni sources, supplemental RSS search queries, persistent PostgreSQL deployment and full-text JSONL export. This is **not** an exhaustive crawler; read the [coverage status](docs/STATUS.md) and [coverage design](docs/PHASE2_COVERAGE.md).
 
 ## Sources and evidence
 
 | Site | Discovery | Full-text | Evidence |
 | --- | --- | --- | --- |
 | Robota.ua | Public JSON search API | Public company published-vacancies JSON | Real .NET search, total reconciliation, and Credit Agricole full vacancy retrieved in GitHub Actions |
-| DOU | RSS | Public vacancy HTML | Real RSS returned 25 entries; sample detail length 4,625 characters |
-| Djinni | Public RSS | Public vacancy HTML | Live smoke: 54 RSS entries, sample full text 1,891 characters; coverage unverified |
+| DOU | RSS | Public vacancy HTML | Default RSS and supplemental C# RSS verified live; capped to 25 references per tested feed |
+| Djinni | Public RSS | Public vacancy HTML | Default feed found 54, supplemental C# RSS found 100; coverage unverified |
 | Work.ua | Draft HTML search, **disabled by default** | Draft HTML | GitHub runner returned HTTP 403; do not bypass access controls |
 | Jooble | Official regional REST API, opt-in only | Search snippets only | Client, key protection and PostgreSQL quota guard tested; no live key used |
 
@@ -18,7 +18,8 @@
 
 - Store discovered vacancies **before** attempting their full descriptions.
 - Canonical IDs avoid duplicate Robota listings across several queries (for example `.net` and `backend`).
-- `job_queries` preserves the keyword query provenance of every discovered vacancy.
+- `job_queries` preserves the keyword query provenance of every discovered vacancy. Different DOU/Djinni RSS queries share canonical vacancy IDs.
+- Recently saved full descriptions are reused for overlapping queries, with CachedDetails reported per source.
 - `fetch_errors` tracks unreadable descriptions and source/network errors. **Even jobs no longer present in a feed are retained and retried.**
 - `retry_runs` records attempts to recover older missing full texts. `--pending-status` displays backlog without network traffic.
 - Raw Robota JSON record counts are compared to parsed vacancy IDs; dropped entries cause PARTIAL with DroppedRecords metrics.
@@ -97,3 +98,41 @@ Do not set historical usage to zero when unknown. Reservations occur atomically 
 ## Robota.ua pagination coverage
 
 Live paging diagnostic for broad query **менеджер**: 52,767 total reported; three distinct pages of 59, 177 unique vacancy IDs, no overlap. A `backend` probe reported 36 matches but only 35 parseable IDs. Such mismatches are not treated as complete results. The company published-vacancies JSON can return 100 records while reporting more vacancies; absence from that list is not evidence that an ad is closed. See [Phase 5 notes](docs/PHASE5_ROBOTA_PAGINATION.md).
+
+## Persistent Docker deployment (Windows / Linux)
+
+Requires Docker Compose v2 and a running user's machine/server. **No permanent collector has been deployed to your machine by GitHub Actions.**
+
+```powershell
+Copy-Item .env.example .env
+# Edit .env and set your own strong, secret JOBRADAR_POSTGRES_PASSWORD
+docker compose up --build -d
+docker compose logs -f collector
+```
+
+PostgreSQL is on an internal Compose network (no published host port). Named volumes persist database and reports across container upgrades. Scans run at 08:00, 13:00 and 19:00 Europe/Kyiv.
+
+```powershell
+docker compose run --rm collector --pending-status
+docker compose run --rm collector --export-jsonl
+docker compose cp collector:/app/reports ./jobradar-reports
+```
+
+The JSONL export includes full vacancy descriptions, unknown/known text completeness, publication dates, titles, URLs, and query provenance; exported files can be attached to ChatGPT for analysis. Keep them private as appropriate and never commit environment secrets.
+
+See [Docker runbook](docs/DEPLOY_DOCKER.md) and [Phase 6 technical notes](docs/PHASE6_MULTI_FEEDS.md).
+
+## Multiple RSS searches and text cache
+
+The normal crawler now includes an extra DOU C# RSS search and an extra Djinni C# RSS search in addition to the original .NET RSS feeds. These filters were verified with public GitHub Actions probes. Configure `DouExtraKeywords` and `DjinniExtraKeywords` to expand the search set; feeds may cap their results, so source status is always PARTIAL.
+
+Already downloaded descriptions are reused across overlapping queries for up to `DetailRefreshHours` (24 by default). `CachedDetails` counts these reused records; `DetailsFetched` counts actual fresh retrievals. The database still records each query separately.
+
+Manual standalone output without Docker:
+
+```powershell
+dotnet run --project src/JobRadar/JobRadar.csproj -- --export-jsonl
+dotnet run --project src/JobRadar/JobRadar.csproj -- --smoke-feed-variants
+```
+
+The export is bounded at `ExportMaxRecords` (default 2,000) and may not include all historical records without changing that setting. It does not assert that vacancies are still active.
