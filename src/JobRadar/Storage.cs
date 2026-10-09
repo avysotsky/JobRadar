@@ -96,7 +96,9 @@ ON CONFLICT(source,url) DO UPDATE SET title=excluded.title,company=COALESCE(excl
                     AND (jobs.status_checked_at IS NULL
                       OR excluded.status_checked_at>=jobs.status_checked_at)
                   THEN excluded.open_status
-                  ELSE COALESCE(excluded.open_status,jobs.open_status) END,
+                  WHEN excluded.status_checked_at IS NULL
+                  THEN COALESCE(excluded.open_status,jobs.open_status)
+                  ELSE jobs.open_status END,
  last_seen=GREATEST(excluded.last_seen,jobs.last_seen),
  full_text_at=COALESCE(excluded.full_text_at,jobs.full_text_at),
  status_checked_at=CASE WHEN excluded.status_checked_at IS NOT NULL
