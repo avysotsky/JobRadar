@@ -39,6 +39,32 @@ public sealed class DjinniSource:IJobSource
 {
  public string Name=>"djinni";
  public Uri Home=>new("https://djinni.co/");
- public string ListingUrl(int page)=>"https://djinni.co/jobs/?primary_keyword=.NET&employment=remote&page="+(page+1);
- public IReadOnlyList<JobRef> ParseListings(string html)=>Parsers.Listings(Name,html,Home);
+ public bool IsSinglePageFeed=>true;
+ // Djinni officially exposes an RSS link from its job search pages.
+ // Unlike HTML pagination, a feed is generally capped: coverage MUST remain partial.
+ public string ListingUrl(int page)=>page==0
+  ? "https://djinni.co/jobs/rss/?primary_keyword=.NET&employment=remote"
+  : throw new NotSupportedException("Djinni RSS feed cannot provide exhaustive pagination");
+ public IReadOnlyList<JobRef> ParseListings(string xml)
+ {
+  var doc=XDocument.Parse(xml);
+  var result=new List<JobRef>();
+  foreach(var item in doc.Descendants("item"))
+  {
+   var link=(string?)item.Element("link");
+   if(!Uri.TryCreate(link,UriKind.Absolute,out var uri) ||
+       !(uri.Host=="djinni.co"||uri.Host=="www.djinni.co") ||
+       !System.Text.RegularExpressions.Regex.IsMatch(uri.AbsolutePath,@"^/jobs/\d+"))continue;
+   var title=Parsers.Clean((string?)item.Element("title"));
+   if(title.Length<3)continue;
+   DateTimeOffset? date=null;
+   if(DateTimeOffset.TryParse((string?)item.Element("pubDate"),out var parsed))date=parsed;
+   var previewRaw=(string?)item.Element("description")??"";
+   var previewDoc=new AngleSharp.Html.Parser.HtmlParser().ParseDocument(previewRaw);
+   var preview=Parsers.Clean(previewDoc.Body?.TextContent??previewRaw);
+   result.Add(new JobRef(Name,uri.GetLeftPart(UriPartial.Path),title,null,date,
+     preview.Length==0?null:preview));
+  }
+  return result.DistinctBy(x=>x.Url).ToArray();
+ }
 }

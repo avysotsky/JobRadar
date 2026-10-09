@@ -12,6 +12,8 @@ public sealed class RadarOptions
  public string UserAgent { get; set; } = "JobRadar/0.1 (personal job search; contact: configure-email)";
  public string[] HoursKyiv { get; set; } = ["08:00", "13:00", "19:00"];
  public string OutputDirectory { get; set; } = "reports";
+ public string JoobleLocation {get;set;} = "Ukraine";
+ public string[] JoobleQueries {get;set;} = [".NET", "C# backend"];
  public bool EnabledDou { get; set; } = true;
  public bool EnabledDjinni { get; set; } = true;
  public bool EnabledRobota { get; set; } = true;
