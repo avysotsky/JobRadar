@@ -73,6 +73,32 @@ public static class RobotaLiveSmoke
        ? companyJson.RootElement.EnumerateObject().Select(e=>e.Name).Take(30).ToArray()
        : [];
      result["companyApi"]=new{size=payload.Length,keys};
+     if(companyJson.RootElement.TryGetProperty("filteredVacancies",out var records))
+     {
+      result["companyRecordsKind"]=records.ValueKind.ToString();
+      if(records.ValueKind==JsonValueKind.Array)
+      {
+       result["companyRecordsCount"]=records.GetArrayLength();
+       if(records.GetArrayLength()>0)
+       {
+        var first=records[0];
+        result["companyRecordKeys"]=first.ValueKind==JsonValueKind.Object
+          ? first.EnumerateObject().Select(x=>x.Name).ToArray() : [];
+        foreach(var record in records.EnumerateArray())
+        {
+         if(record.ValueKind!=JsonValueKind.Object)continue;
+         if(record.TryGetProperty("id",out var vacancyId) && vacancyId.ToString()=="11287397")
+         {
+          result["targetKeys"]=record.EnumerateObject().Select(x=>x.Name).ToArray();
+          foreach(var field in new[]{"description","shortDescription","descriptionHtml","vacancyDescription"})
+            if(record.TryGetProperty(field,out var fieldValue))
+              result["target:"+field+"Chars"]=fieldValue.ToString().Length;
+          break;
+         }
+        }
+       }
+      }
+     }
     }
     catch(Exception exception) when(exception is not OperationCanceledException)
     {
