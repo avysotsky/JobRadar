@@ -1,0 +1,19 @@
+name: Public-source diagnostics
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dou-workua:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        site: [dou, workua]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet run --project src/JobRadar/JobRadar.csproj -- --smoke-${{ matrix.site }}

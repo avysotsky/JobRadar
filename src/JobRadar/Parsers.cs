@@ -44,6 +44,7 @@ public static class Parsers
    } catch(JsonException) { }
   }
   if(source.StartsWith("robota-",StringComparison.OrdinalIgnoreCase))return RobotaParser.Description(html);
+  if(source.StartsWith("workua-",StringComparison.OrdinalIgnoreCase))return WorkUaParser.Description(html);
   var selectors = source=="dou" ? new[]{".vacancy-section", ".b-vacancy__description", "article"} : new[]{".job-description", "[data-testid='job-description']", ".job-post__description", "article"};
   foreach(var selector in selectors)
   {

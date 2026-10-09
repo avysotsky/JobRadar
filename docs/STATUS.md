@@ -1,24 +1,28 @@
-# Implementation status — 2026-10-09
+# JobRadar status — 2026-10-09
 
-## Verified
-- .NET 10 restore/build and xUnit passed on GitHub Actions; PostgreSQL 16 service tests exercise persistence.
-- Robota.ua public search JSON returned 56 discovered records for one `.net` query, with a reported total of 56 in a live test.
-- Robota.ua company published-vacancies JSON supplied a full body for publicly posted Credit Agricole vacancy `11287397`. End-to-end smoke extracted **9,835 readable characters** and date **2026-10-05**.
-- Robota API source persists discovered metadata and preview before attempting full text; query totals and failures are reported.
-- Robota company feed downloaded once per company per crawl, in-memory cached.
+## Verified by GitHub Actions
 
-## Not proven / remaining
-- No exhaustive all-queries/all-sites vacancy coverage guarantee.
-- A company feed can have a 100-record cap or omit a searched vacancy. Such detail requests fail explicitly; they are **not** marked complete.
-- Search API paging, query parameter semantics and filtering need broad live validation on different queries, cities and page counts.
-- DOU RSS may be truncated; no independent exhaustive count reconciliation.
-- Djinni HTML selectors and paging have not been validated against live site responses.
-- Work.ua, Jooble and further sources not yet integrated.
-- Full-text completeness beyond the tested Robota fixture, deduplication across keyword queries/sources, and independent active-vacancy verification remain to implement.
-- Integration tests use a disposable PostgreSQL 16 service in GitHub Actions; local Windows and Linux environments not verified.
-- Source statuses `FAILED`, `PARTIAL` and `UNVERIFIED_COVERAGE` are **not** claims of exhaustive completeness.
+- .NET 10 restore, build, tests, and PostgreSQL 16 integration tests pass.
+- PostgreSQL creation uses a transaction-scoped advisory lock to avoid parallel-test schema creation races.
+- Canonical Robota source IDs and query-to-vacancy provenance are tested against PostgreSQL.
+- Robota.ua public JSON API returned 56 entries for .NET and matched its reported total in a smoke test.
+- Robota.ua Credit Agricole vacancy `11287397`: 9,835 extracted readable characters, date 2026-10-05.
+- DOU RSS: 25 entries returned in live diagnostic; one full vacancy description extracted (4,625 characters). **DOU feed is not necessarily exhaustive.**
+- Work.ua public search URL: live HTTP 403 from GitHub Actions. The parser is disabled by default. **Not a verified data source.**
 
-## Controls
-- Failed full text stays in `fetch_errors`; metadata stays in `jobs` (without `full_text_at`).
-- HTTP 403/404 are not retried; HTTP 429 respects bounded Retry-After; source errors are not silently converted into zero jobs.
-- No CAPTCHA or login bypassing; use publicly accessible information and respect source restrictions.
+## Coverage semantics
+
+- `QUERY_RECONCILED`: extracted ID count matches the source's explicit total for one query, with full-text fetch attempts completed successfully.
+- `PARTIAL`: page truncation, missing full text, ambiguous source totals, or other incomplete run.
+- `FAILED`: no usable page from that query/source.
+- `UNVERIFIED_COVERAGE`: content obtained but exhaustive pagination not proven.
+
+Even a `QUERY_RECONCILED` result is not evidence of complete coverage of the platform. Companies may cap their published-vacancies feed at 100 items; such missing details are not silently ignored.
+
+## Next
+
+- Verify and expand Djinni.
+- Find a permissioned Work.ua feed/API or user-authorized access method; do not attempt to bypass 403.
+- Add Jooble regional API with a guarded lifetime key quota (500 total free calls).
+- Broaden search queries and report completeness per query, plus active/closed status verification.
+- Avoid scheduled production runs until coverage/error metrics and host setup have been validated.

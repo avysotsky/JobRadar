@@ -40,7 +40,7 @@ public sealed class RobotaApiSource(string query) : IJobSource
    string url="https://robota.ua/company"+companyId+"/vacancy"+jobId;
    var previewHtml=GetString(item,"shortDescription")??"";
    var preview=Parsers.Clean(System.Text.RegularExpressions.Regex.Replace(previewHtml,@"<[^>]+>"," "));
-   list.Add(new JobRef(Name,url,title,company,published,preview.Length==0?null:preview));
+   list.Add(new JobRef("robota",url,title,company,published,preview.Length==0?null:preview));
   }
   return list.DistinctBy(x=>x.Url).ToArray();
  }
