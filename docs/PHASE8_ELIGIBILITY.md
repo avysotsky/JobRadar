@@ -24,7 +24,7 @@ The triage JSON summary now includes HighScoreNeedsReview, GeoRestrictedNeedsRev
 
 ## Regression corpus
 
-The synthetic multilingual regression JSON contains 32 scenarios covering UA and foreign-country restrictions, time zones, relocation, hybrid cloud vs office, remote-team mentions, English, backend vs desktop, preview-only jobs, mixed seniority, and unrelated stacks.
+The synthetic multilingual regression JSON contains 33 scenarios covering UA and foreign-country restrictions, time zones, relocation, hybrid cloud vs office, remote-team mentions, English, backend vs desktop, preview-only jobs, mixed seniority, and unrelated stacks.
 
 Local offline test command (GitHub Actions are disabled):
 
