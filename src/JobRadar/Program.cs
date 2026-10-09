@@ -18,9 +18,16 @@ if(args.Contains("--export-jsonl"))
  Directory.CreateDirectory(output);
  var path=Path.Combine(output,$"jobs-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}.jsonl");
  await using var writer=new StreamWriter(path,false,new System.Text.UTF8Encoding(false));
+ long totalStored=await storage.CountVacanciesForTriageAsync(CancellationToken.None);
  int count=await storage.ExportJobsJsonlAsync(writer,Math.Clamp(options.ExportMaxRecords,1,50000),CancellationToken.None);
  await writer.FlushAsync();
- Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new {Path=path,Rows=count,MaxRecords=options.ExportMaxRecords}));
+ long omitted=Math.Max(0L,totalStored-count);
+ Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new {
+  Path=path,Rows=count,MaxRecords=options.ExportMaxRecords,
+  TotalStored=totalStored,OmittedByLimit=omitted
+ }));
+ if(omitted>0)Console.Error.WriteLine(
+  "Export truncated by ExportMaxRecords; "+omitted+" stored vacancies were not exported.");
  return 0;
 }
 if(args.Contains("--triage-jsonl"))
