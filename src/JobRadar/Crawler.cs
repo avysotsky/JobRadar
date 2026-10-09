@@ -154,7 +154,8 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
    summaries.Add(new SourceResult(source.Name,pages,references,details,failedDetails,total,status,error,
      previousRefs>0?previousRefs:null,warning,
      source is RobotaApiSource?rawRecords:null,source is RobotaApiSource?droppedRecords:null,cachedDetails));
-   progress?.Invoke($"{label}: FINISHED status={status}, pages={pages}, found={references}, full={details}, cached={cachedDetails}, failed={failedDetails}");
+   progress?.Invoke($"{label}: FINISHED status={status}, pages={pages}, found={references}, full={details}, cached={cachedDetails}, failed={failedDetails}"+
+     (source is RobotaApiSource && !options.EnabledRobotaDetails?", Robota full text paused (HTTP 403)":""));
   }
   var report=new CrawlReport(started,DateTimeOffset.UtcNow,summaries);
   await storage.SaveReport(report,ct);
