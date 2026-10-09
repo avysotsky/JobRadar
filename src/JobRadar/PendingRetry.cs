@@ -28,7 +28,9 @@ public sealed class PendingRetry(HttpFetcher fetcher, Storage storage, RadarOpti
  public async Task<PendingRetryReport> RunAsync(CancellationToken ct)
  {
   var started=DateTimeOffset.UtcNow;
-  var sources=EnabledSources();
+  // Preserve Robota in StatusAsync for visibility, but never replay blocked
+  // Robota full-text requests while the integration is disabled in config.
+  var sources=EnabledSources().Where(s=>s!="robota" || options.EnabledRobotaDetails).ToArray();
   int maxAttempts=Math.Clamp(options.PendingMaxAttempts,1,20);
   int ageMinutes=Math.Clamp(options.PendingMinimumAgeMinutes,0,10080);
   int limit=Math.Clamp(options.PendingBatchSize,1,100);
