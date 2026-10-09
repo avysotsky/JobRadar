@@ -101,6 +101,7 @@ FROM job_status_checks WHERE source=@s AND url=@u
    x=>x.Url==job.Url);
   Assert.Null(snapshot.IsOpen);
   Assert.Equal("html:status-unverified",snapshot.StatusEvidence);
+  Assert.Equal(new string('A',100),snapshot.Description);
   Assert.NotNull(snapshot.StatusCheckedAt);
   Assert.True((snapshot.StatusCheckedAt.Value-recent).Duration()<TimeSpan.FromMilliseconds(1));
  }
