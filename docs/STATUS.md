@@ -33,3 +33,13 @@ Even a `QUERY_RECONCILED` result is not evidence of complete coverage of the pla
 - Jooble: official Ukrainian regional API client implemented, with explicit one-shot command and PostgreSQL lifetime quota reservations. No live API calls without user key and prior usage declaration.
 - Jooble produces search previews, not complete descriptions; all Jooble runs remain PARTIAL_SNIPPET_ONLY.
 - Work.ua remains HTTP 403 and disabled by default. No bypass.
+
+## Phase 4 (2026-10-09)
+
+- Durable backlog recovery: `jobs` + `fetch_errors` persists discovered vacancies even if they leave the public RSS feed; `retry_runs` records recovery attempts.
+- `--pending-status` (zero network requests) reports ready, deferred, blocked, exhausted jobs; `--retry-failed` replays a configurable bounded batch.
+- HTTP 401/403/404 are not automatically retried; source authorization restrictions are respected. Jobs remain visible, not deleted.
+- Source-level trend flag: >50% loss of unique references relative to an earlier nonfailed run with at least 20 references marks a query `PARTIAL` and emits `CoverageWarning`.
+- `.NET CI` tests PostgreSQL retry queue and coverage trend; the runner also exercises `--pending-status` against its disposable PostgreSQL 16 service.
+- GitHub Actions public-source diagnostics scheduled daily for DOU and Djinni, not a persistent production crawl.
+- **Still incomplete:** provider-side caps, full pagination beyond RSS, Work.ua access, real Jooble key, active/closed classification and operational deployment.

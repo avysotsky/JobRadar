@@ -19,7 +19,8 @@
 - Store discovered vacancies **before** attempting their full descriptions.
 - Canonical IDs avoid duplicate Robota listings across several queries (for example `.net` and `backend`).
 - `job_queries` preserves the keyword query provenance of every discovered vacancy.
-- `fetch_errors` tracks unreadable descriptions and source/network errors.
+- `fetch_errors` tracks unreadable descriptions and source/network errors. **Even jobs no longer present in a feed are retained and retried.**
+- `retry_runs` records attempts to recover older missing full texts. `--pending-status` displays backlog without network traffic.
 - `QUERY_RECONCILED` indicates matching the API's total for **one query**, not complete coverage of a job board.
 - `PARTIAL` and `FAILED` are explicit; do not treat them as zero matching jobs.
 - PostgreSQL 16 integration tests and .NET 10 xUnit run in GitHub Actions.
@@ -55,6 +56,23 @@ dotnet run --project src/JobRadar/JobRadar.csproj -- --smoke-workua
 ```
 
 The Work.ua command currently fails with HTTP 403 in GitHub Actions. It remains an explicit diagnostic, not a mandatory CI check.
+
+## Full-text recovery and coverage audit
+
+A job discovered today but absent from tomorrow's RSS remains in PostgreSQL. The retry worker selects jobs lacking full text, independent of current source results. It uses bounded retries (default: 20 jobs per run, minimum 6 hours between attempts, maximum 5 attempts per job). Only enabled, supported sources are retried; **Jooble previews are not treated as complete vacancy descriptions and are excluded**.
+
+```powershell
+dotnet run --project src/JobRadar/JobRadar.csproj -- --pending-status
+dotnet run --project src/JobRadar/JobRadar.csproj -- --retry-failed
+```
+
+`--pending-status` makes **zero HTTP calls** and shows `Total`, `Ready`, `Deferred`, `Blocked`, and `Exhausted`. HTTP 401/403/404 jobs are retained but not automatically retried; exhausted jobs also remain visible for manual investigation. Retrying is enabled after each normal crawl and can be disabled via `RetryAfterCrawl=false` in appsettings. Structured retry reports persist in `retry_runs`.
+
+Each source report now compares the current number of unique vacancy references with a recent previously saved run. A drop below half the prior count (when the prior count is at least 20) adds a `CoverageWarning` and marks that source `PARTIAL` even if the API says the query is complete. This is a **suspicion of coverage loss**, not proof of an error. Normal RSS caps and missing keyword categories still prevent exhaustive guarantees.
+
+A single `--once` run now exits nonzero when a source fails, descriptions fail or a coverage anomaly is detected; JSON crawl reports are saved first. Daily GitHub Actions source smoke tests only verify availability of sampled source pages; they do not run the complete scheduled crawler or retain its database.
+
+See [phase 4 technical notes](docs/PHASE4_RETRY_AUDIT.md).
 
 ## Compliance and limitations
 

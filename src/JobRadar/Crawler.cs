@@ -11,6 +11,7 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
   var started=DateTimeOffset.UtcNow;
   var summaries=new List<SourceResult>();
   var robotaDetails=new RobotaCompanyDetails(fetcher);
+  var previousCounts=await storage.GetPreviousReferenceCountsAsync(ct);
   foreach(var source in sources)
   {
    int pages=0,references=0,details=0,failedDetails=0;
@@ -106,10 +107,14 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
      uncertain=true;
    if(!source.IsSinglePageFeed && !total.HasValue)
      uncertain=true; // enumeration without an independent total is unverified
+   previousCounts.TryGetValue(source.Name,out var previousRefs);
+   var warning=CoverageDrift.Warning(previousRefs, references);
+   if(warning!=null)uncertain=true;
    string status=pages==0?"FAILED":
      failedDetails>0||uncertain||error!=null?"PARTIAL":
      reconciled?"QUERY_RECONCILED":"UNVERIFIED_COVERAGE";
-   summaries.Add(new SourceResult(source.Name,pages,references,details,failedDetails,total,status,error));
+   summaries.Add(new SourceResult(source.Name,pages,references,details,failedDetails,total,status,error,
+     previousRefs>0?previousRefs:null,warning));
   }
   var report=new CrawlReport(started,DateTimeOffset.UtcNow,summaries);
   await storage.SaveReport(report,ct);

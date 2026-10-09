@@ -1,7 +1,7 @@
 using Npgsql;
 using NpgsqlTypes;
 namespace JobRadar;
-public sealed class Storage(string connectionString)
+public sealed partial class Storage(string connectionString)
 {
  public async Task Initialize(CancellationToken ct)
  {
@@ -28,6 +28,9 @@ CREATE TABLE IF NOT EXISTS crawl_runs (
 CREATE TABLE IF NOT EXISTS api_request_budget (
  provider text PRIMARY KEY, requests_used int NOT NULL,
  upper_limit int NOT NULL CHECK(upper_limit BETWEEN 1 AND 500));
+CREATE TABLE IF NOT EXISTS retry_runs (
+ id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, started_at timestamptz NOT NULL,
+ ended_at timestamptz NOT NULL, report jsonb NOT NULL);
 CREATE TABLE IF NOT EXISTS fetch_errors (
  source text NOT NULL, url text NOT NULL, attempts int NOT NULL DEFAULT 1,
  last_error text NOT NULL, last_attempt timestamptz NOT NULL,

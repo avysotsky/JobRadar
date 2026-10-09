@@ -3,15 +3,17 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - jobradar/phase3-djinni-rss-jooble-guarded
+      - jobradar/phase4-pending-retry-audit
     paths:
       - 'src/JobRadar/Sources.cs'
       - 'src/JobRadar/Program.cs'
       - '.github/workflows/source-diagnostics.yml'
+  schedule:
+    - cron: '41 6 * * *'
 permissions:
   contents: read
 jobs:
-  dou-workua:
+  public-source-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     strategy:

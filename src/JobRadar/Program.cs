@@ -10,6 +10,22 @@ if(args.Contains("--smoke-workua"))return await PublicSourceSmoke.RunAsync(new W
 var cs=Environment.GetEnvironmentVariable("JOBRADAR_DB") ?? options.ConnectionString;
 var storage=new Storage(cs);
 try{await storage.Initialize(CancellationToken.None);}catch(Exception e){Console.Error.WriteLine("Database unavailable: "+e.Message);return 3;}
+if(args.Contains("--pending-status"))
+{
+ using var statusClient=new HttpClient();
+ var retry=new PendingRetry(new HttpFetcher(statusClient,0),storage,options);
+ Console.WriteLine(PendingRetry.Render(await retry.StatusAsync(CancellationToken.None)));
+ return 0;
+}
+if(args.Contains("--retry-failed"))
+{
+ using var client=new HttpClient{Timeout=TimeSpan.FromSeconds(options.TimeoutSeconds)};
+ client.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
+ var retry=new PendingRetry(new HttpFetcher(client,options.DelayMilliseconds),storage,options);
+ var result=await retry.RunAsync(CancellationToken.None);
+ Console.WriteLine(PendingRetry.Render(result));
+ return result.Failed==0?0:4;
+}
 if(args.Contains("--jooble-once"))
  return await JoobleRunner.RunAsync(storage,options,CancellationToken.None);
 using var http=new HttpClient{Timeout=TimeSpan.FromSeconds(options.TimeoutSeconds)};
@@ -19,7 +35,7 @@ if(options.EnabledRobota)foreach(var term in options.RobotaQueries.Distinct(Stri
 if(options.EnabledWorkUa)foreach(var term in options.WorkUaQueries.Distinct(StringComparer.OrdinalIgnoreCase))sources.Add(new WorkUaSource(term));
 var crawler=new Crawler(new HttpFetcher(http,options.DelayMilliseconds),storage,options);
 var once=args.Contains("--once");
-async Task Run(CancellationToken ct)
+async Task<int> Run(CancellationToken ct)
 {
  try
  {
@@ -27,11 +43,26 @@ async Task Run(CancellationToken ct)
   Directory.CreateDirectory(options.OutputDirectory);
   var file=Path.Combine(options.OutputDirectory,$"crawl-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}.json");
   var json=JsonSerializer.Serialize(report,new JsonSerializerOptions{WriteIndented=true});
-  await File.WriteAllTextAsync(file,json,ct);Console.WriteLine(json);
+  await File.WriteAllTextAsync(file,json,ct);
+  Console.WriteLine(json);
+  var failures=report.Sources.Any(s=>
+    s.Status=="FAILED" || s.Error!=null || s.DetailsFailed>0 || s.CoverageWarning!=null);
+  if(options.RetryAfterCrawl)
+  {
+   var retryReport=await new PendingRetry(new HttpFetcher(http,options.DelayMilliseconds),storage,options).RunAsync(ct);
+   Console.WriteLine("Pending details: "+PendingRetry.Render(retryReport));
+   if(retryReport.Failed>0)failures=true;
+  }
+  if(failures)Console.Error.WriteLine("JobRadar: scan had source errors or unresolved detail failures; consult report.");
+  return failures?4:0;
  }
- catch(Exception e) when(e is not OperationCanceledException){Console.Error.WriteLine("CRAWL FAILED: "+e);}
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("CRAWL FAILED: "+e);
+  return 4;
+ }
 }
-if(once){await Run(CancellationToken.None);return 0;}
+if(once)return await Run(CancellationToken.None);
 using var cts=new CancellationTokenSource();Console.CancelKeyPress+=(s,e)=>{e.Cancel=true;cts.Cancel();};
 var kyiv=TimeZoneInfo.FindSystemTimeZoneById("Europe/Kyiv");
 var slots=options.HoursKyiv.Select(TimeOnly.Parse).Order().ToArray();
@@ -48,6 +79,10 @@ while(!cts.IsCancellationRequested)
  var nextUtc=new DateTimeOffset(unspecified,offset).ToUniversalTime();
  var delay=nextUtc-DateTimeOffset.UtcNow;
  if(delay>TimeSpan.Zero)try{await Task.Delay(delay,cts.Token);}catch(OperationCanceledException){break;}
- if(!cts.IsCancellationRequested)await Run(cts.Token);
+ if(!cts.IsCancellationRequested)
+ {
+  var code=await Run(cts.Token);
+  if(code!=0)Console.Error.WriteLine("JobRadar scan returned exit code "+code);
+ }
 }
 return 0;

@@ -1,7 +1,7 @@
 namespace JobRadar;
 public sealed record JobRef(string Source, string Url, string Title, string? Company, DateTimeOffset? PublishedAt, string? Preview = null);
 public sealed record JobDetail(JobRef Job, string Description, bool? Open, DateTimeOffset FetchedAt);
-public sealed record SourceResult(string Source, int PagesFetched, int ReferencesFound, int DetailsFetched, int DetailsFailed, int? ReportedTotal, string Status, string? Error);
+public sealed record SourceResult(string Source, int PagesFetched, int ReferencesFound, int DetailsFetched, int DetailsFailed, int? ReportedTotal, string Status, string? Error, int? PreviousReferences = null, string? CoverageWarning = null);
 public sealed record CrawlReport(DateTimeOffset StartedAt, DateTimeOffset EndedAt, IReadOnlyList<SourceResult> Sources);
 public sealed class RadarOptions
 {
@@ -14,6 +14,10 @@ public sealed class RadarOptions
  public string OutputDirectory { get; set; } = "reports";
  public string JoobleLocation {get;set;} = "Ukraine";
  public string[] JoobleQueries {get;set;} = [".NET", "C# backend"];
+ public bool RetryAfterCrawl {get;set;} = true;
+ public int PendingBatchSize {get;set;} = 20;
+ public int PendingMaxAttempts {get;set;} = 5;
+ public int PendingMinimumAgeMinutes {get;set;} = 360;
  public bool EnabledDou { get; set; } = true;
  public bool EnabledDjinni { get; set; } = true;
  public bool EnabledRobota { get; set; } = true;
