@@ -1,6 +1,12 @@
 name: Public-source diagnostics
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - jobradar/phase2-coverage-workua-dou
+    paths:
+      - '.github/workflows/source-diagnostics.yml'
+      - 'src/JobRadar/**'
 permissions:
   contents: read
 jobs:
