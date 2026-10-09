@@ -22,6 +22,20 @@ These are conservative heuristic review prompts, **not a legal or provider-verif
 
 The triage JSON summary now includes HighScoreNeedsReview, GeoRestrictedNeedsReview, IncompleteTextNeedsReview and UnverifiedOpenStatus. These categories overlap and must not be summed as unique vacancies. LastSeen is discovery evidence, not proof the job is active. Unknown provider status remains unknown even for a recently discovered job.
 
+## Provider status evidence (Phase 8 extension)
+
+A source's listing count, RSS absence, capped Robota company feed, 404 or a successful detail download cannot by themselves prove active/closed status. The classifier defaults to UNKNOWN unless the **provider HTML** presents an explicit closure banner. A standalone very short closed-message page is also accepted; closure keywords appearing inside a job description, footer, or long page body are ignored.
+
+- `VacancyStatusEvidence.FromProviderHtml` returns nullable `IsOpen` and an evidence code. No positive/open status is inferred from an Apply button.
+- The crawler and failed-detail retry use the same parser. Robota company-feed fetches do **not** invent a status check.
+- `jobs.status_checked_at` and `jobs.status_evidence` hold the latest successful provider HTML observation. `job_status_checks` is append-only evidence history with observation time, tri-state result and source code.
+- A later successful status check with no closure evidence correctly changes the latest status from closed to UNKNOWN, while historical closure observations are retained for audit. This does **not** imply reopening.
+- Legacy `open_status=false` records without a supported evidence code are routed to human review, not silently excluded as provider-verified closures. An explicit closure banner remains excluded from the confident shortlist, but visible in the audit.
+- The JSONL exports carry `StatusCheckedAt` and `StatusEvidence`. Historical rows have null metadata until a successful new check.
+- The triage summary includes `TotalStored` and `OmittedByLimit` so the default 2,000-record export cap is **visible rather than silently treated as complete**. Counting happens before reading rows; concurrent ingestion can cause momentary count drift.
+
+The historical table is a **snapshot audit**, not a periodic closure monitor. A deployed collector, lawful provider access, source-specific status adapters and recurring detail refresh are still required for genuine current-state verification. Explicitly closed HTML fixtures are synthetic and are not evidence of current real board markup.
+
 ## Regression corpus
 
 The synthetic multilingual regression JSON contains 33 scenarios covering UA and foreign-country restrictions, time zones, relocation, hybrid cloud vs office, remote-team mentions, English, backend vs desktop, preview-only jobs, mixed seniority, and unrelated stacks.
