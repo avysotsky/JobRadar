@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - jobradar/phase6-multi-feed-deployment
+      - jobradar/phase7-vacancy-triage
       - main
     paths:
       - 'Dockerfile'
@@ -15,6 +16,7 @@ on:
       - 'Dockerfile'
       - '.dockerignore'
       - 'compose.yaml'
+      - '.github/workflows/docker-deployment-test.yml'
       - 'src/JobRadar/**'
   workflow_dispatch:
 permissions:
