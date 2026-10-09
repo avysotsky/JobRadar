@@ -1,5 +1,5 @@
 namespace JobRadar;
-public sealed record JobRef(string Source, string Url, string Title, string? Company, DateTimeOffset? PublishedAt);
+public sealed record JobRef(string Source, string Url, string Title, string? Company, DateTimeOffset? PublishedAt, string? Preview = null);
 public sealed record JobDetail(JobRef Job, string Description, bool? Open, DateTimeOffset FetchedAt);
 public sealed record SourceResult(string Source, int PagesFetched, int ReferencesFound, int DetailsFetched, int DetailsFailed, int? ReportedTotal, string Status, string? Error);
 public sealed record CrawlReport(DateTimeOffset StartedAt, DateTimeOffset EndedAt, IReadOnlyList<SourceResult> Sources);
@@ -14,4 +14,6 @@ public sealed class RadarOptions
  public string OutputDirectory { get; set; } = "reports";
  public bool EnabledDou { get; set; } = true;
  public bool EnabledDjinni { get; set; } = true;
+ public bool EnabledRobota { get; set; } = true;
+ public string[] RobotaQueries { get; set; } = [".net", "c-sharp", "backend"];
 }

@@ -3,12 +3,14 @@ using System.Text.Json;
 var configPath=Path.Combine(AppContext.BaseDirectory,"appsettings.json");
 if(!File.Exists(configPath)){Console.Error.WriteLine($"Missing configuration: {configPath}");return 2;}
 var options=JsonSerializer.Deserialize<RadarOptions>(await File.ReadAllTextAsync(configPath),new JsonSerializerOptions{PropertyNameCaseInsensitive=true}) ?? new RadarOptions();
+if(args.Contains("--smoke-robota"))return await RobotaLiveSmoke.RunAsync(options,CancellationToken.None);
 var cs=Environment.GetEnvironmentVariable("JOBRADAR_DB") ?? options.ConnectionString;
 var storage=new Storage(cs);
 try{await storage.Initialize(CancellationToken.None);}catch(Exception e){Console.Error.WriteLine("Database unavailable: "+e.Message);return 3;}
 using var http=new HttpClient{Timeout=TimeSpan.FromSeconds(options.TimeoutSeconds)};
 http.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
 var sources=new List<IJobSource>();if(options.EnabledDou)sources.Add(new DouSource());if(options.EnabledDjinni)sources.Add(new DjinniSource());
+if(options.EnabledRobota)foreach(var term in options.RobotaQueries.Distinct(StringComparer.OrdinalIgnoreCase))sources.Add(new RobotaApiSource(term));
 var crawler=new Crawler(new HttpFetcher(http,options.DelayMilliseconds),storage,options);
 var once=args.Contains("--once");
 async Task Run(CancellationToken ct)
