@@ -30,6 +30,27 @@ public static class RobotaLiveSmoke
    var description=Parsers.Description(source.Name,detail);
    result["sampleUrl"]=sampleUrl;
    result["descriptionChars"]=description.Length;
+   if(description.Length<150)
+   {
+    foreach(var probeUrl in new[]{
+      "https://api.rabota.ua/vacancy/11287397",
+      "https://api.robota.ua/vacancies/11287397" })
+    {
+     try
+     {
+      var json=await fetcher.GetAsync(probeUrl,ct);
+      using var parsed=JsonDocument.Parse(json);
+      var keys=parsed.RootElement.ValueKind==JsonValueKind.Object
+       ? parsed.RootElement.EnumerateObject().Select(p=>p.Name).Take(25).ToArray()
+       : [];
+      result["probe:"+probeUrl]=new{size=json.Length,keys};
+     }
+     catch(Exception exception) when(exception is not OperationCanceledException)
+     {
+      result["probe:"+probeUrl]=exception.GetType().Name+": "+exception.Message;
+     }
+    }
+   }
    result["publishedDate"]=RobotaParser.PublishedDate(detail)?.ToString("yyyy-MM-dd");
    result["coverage"]="UNVERIFIED";
    if(description.Length<150)throw new InvalidDataException("Vacancy detail extraction returned under 150 chars.");
