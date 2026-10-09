@@ -14,7 +14,7 @@ public sealed partial class Storage
   if(limit<1 || limit>50000)throw new ArgumentOutOfRangeException(nameof(limit));
   const string sql="""
 SELECT j.source,j.url,j.title,j.company,j.published_at,j.preview,j.description,
-       j.full_text_at,j.last_seen,j.open_status,
+       j.full_text_at,j.last_seen,j.open_status,j.status_checked_at,j.status_evidence,
        COALESCE((
         SELECT json_agg(query_name ORDER BY query_name)::text
         FROM job_queries q WHERE q.source=j.source AND q.url=j.url
@@ -43,7 +43,9 @@ LIMIT @limit
     FullTextAt=fetched,
     LastSeen=reader.GetDateTime(8),
     OpenStatus=isOpen,
-    Queries=JsonSerializer.Deserialize<string[]>(reader.GetString(10))??[]
+    StatusCheckedAt=reader.IsDBNull(10)?(DateTime?)null:reader.GetDateTime(10),
+    StatusEvidence=reader.IsDBNull(11)?null:reader.GetString(11),
+    Queries=JsonSerializer.Deserialize<string[]>(reader.GetString(12))??[]
    };
    await writer.WriteLineAsync(JsonSerializer.Serialize(record).AsMemory(),ct);
    count++;
