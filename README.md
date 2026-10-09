@@ -2,13 +2,13 @@
 
 .NET 10 vacancy ingestion for Ukrainian software development jobs — [GitHub repository](https://github.com/avysotsky/JobRadar).
 
-**Status:** CI-tested ingestion prototype with Robota.ua, DOU and Djinni sources, supplemental RSS search queries, persistent PostgreSQL deployment and full-text JSONL export. This is **not** an exhaustive crawler; read the [coverage status](docs/STATUS.md) and [coverage design](docs/PHASE2_COVERAGE.md).
+**Status:** locally validated ingestion prototype with Robota.ua, DOU and Djinni sources, supplemental RSS search queries, PostgreSQL persistence, optional Docker deployment and full-text JSONL export. This is **not** an exhaustive crawler; read the [coverage status](docs/STATUS.md) and [coverage design](docs/PHASE2_COVERAGE.md).
 
 ## GitHub Actions spending protection (2026-10-09)
 
 **All six GitHub Actions workflows are disabled** (removed atomically in [commit a5a621b](https://github.com/avysotsky/JobRadar/commit/a5a621b959836d8ea1d9400dfe220006a2876b9e)) due to the user's explicit instruction. Historical GitHub CI results below describe past runs only; they are not evidence of any new validation. **Do not restore workflows, automatic PR checks, scheduled jobs, or workflow_dispatch without explicit permission.** Use [local test validation](scripts/validate-local.ps1) instead.
 
-Phase 8 adds conservative geographical and role-eligibility review gates, multilingual synthetic regression cases, and review-backlog metrics. See [Phase 8 design](docs/PHASE8_ELIGIBILITY.md). The new code requires local build/tests before it can be described as validated.
+Phase 8 adds conservative geographical and role-eligibility review gates, multilingual synthetic regression cases, and review-backlog metrics. See [Phase 8 design](docs/PHASE8_ELIGIBILITY.md). The Phase 8 branch passed the owner's local Release build and all **84/84 xUnit tests**, including PostgreSQL 16 integration tests against an isolated `jobradar_test` database on 2026-10-09. These results do not validate live provider coverage or deployment.
 
 ## Sources and evidence
 
@@ -31,7 +31,7 @@ Phase 8 adds conservative geographical and role-eligibility review gates, multil
 - Raw Robota JSON record counts are compared to parsed vacancy IDs; dropped entries cause PARTIAL with DroppedRecords metrics.
 - `QUERY_RECONCILED` indicates matching the API's total for **one query**, not complete coverage of a job board.
 - `PARTIAL` and `FAILED` are explicit; do not treat them as zero matching jobs.
-- PostgreSQL 16 integration tests and .NET 10 xUnit run in GitHub Actions.
+- On 2026-10-09, .NET 10 Release build and **84/84 xUnit tests** passed locally, with PostgreSQL 16 integration tests enabled. GitHub Actions remain disabled.
 
 ## Setup
 
@@ -64,7 +64,7 @@ dotnet run --project src/JobRadar/JobRadar.csproj -- --smoke-djinni
 dotnet run --project src/JobRadar/JobRadar.csproj -- --smoke-workua
 ```
 
-The Work.ua command currently fails with HTTP 403 in GitHub Actions. It remains an explicit diagnostic, not a mandatory CI check.
+The last GitHub-hosted Work.ua probe received HTTP 403; Actions are now disabled. The Work.ua adapter remains an optional diagnostic and is not a verified source.
 
 ## Full-text recovery and coverage audit
 
@@ -79,7 +79,7 @@ dotnet run --project src/JobRadar/JobRadar.csproj -- --retry-failed
 
 Each source report now compares the current number of unique vacancy references with a recent previously saved run. A drop below half the prior count (when the prior count is at least 20) adds a `CoverageWarning` and marks that source `PARTIAL` even if the API says the query is complete. This is a **suspicion of coverage loss**, not proof of an error. Normal RSS caps and missing keyword categories still prevent exhaustive guarantees.
 
-A single `--once` run now exits nonzero when a source fails, descriptions fail or a coverage anomaly is detected; JSON crawl reports are saved first. Daily GitHub Actions source smoke tests only verify availability of sampled source pages; they do not run the complete scheduled crawler or retain its database.
+A single `--once` run now exits nonzero when a source fails, descriptions fail or a coverage anomaly is detected; JSON crawl reports are saved first. Historical GitHub Actions source smoke tests verified only sampled source pages. GitHub Actions are now disabled; no unattended source scans or persistent crawler are active.
 
 See [phase 4 technical notes](docs/PHASE4_RETRY_AUDIT.md).
 
