@@ -7,3 +7,5 @@
 - Parser and storage workflows must be exercised against real page snapshots and a PostgreSQL test instance.
 - .NET 10 CI configured; passing build and tests not confirmed.
 - HTTP 403/429 and parse failures must be surfaced rather than represented as no vacancies.
+
+- Robota API search: public JSON endpoint `https://api.rabota.ua/vacancy/search` is now preferred; real production response and its availability remain subject to live smoke validation. Older HTML search scraper retained as fallback code only. This is NOT evidence of exhaustive discovery.
