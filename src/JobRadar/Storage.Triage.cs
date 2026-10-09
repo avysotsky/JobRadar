@@ -5,6 +5,14 @@ namespace JobRadar;
 
 public sealed partial class Storage
 {
+ public async Task<long> CountVacanciesForTriageAsync(CancellationToken ct)
+ {
+  await using var db=new NpgsqlConnection(connectionString);
+  await db.OpenAsync(ct);
+  await using var cmd=new NpgsqlCommand("SELECT count(*) FROM jobs",db);
+  return (long)(await cmd.ExecuteScalarAsync(ct)??0L);
+ }
+
  public async Task<IReadOnlyList<VacancySnapshot>> ReadVacanciesForTriageAsync(
   int limit,CancellationToken ct)
  {
