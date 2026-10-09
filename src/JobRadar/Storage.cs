@@ -13,6 +13,11 @@ CREATE TABLE IF NOT EXISTS jobs (
  open_status boolean, last_seen timestamptz NOT NULL, full_text_at timestamptz,
  PRIMARY KEY(source,url));
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS preview text;
+CREATE TABLE IF NOT EXISTS job_queries (
+ source text NOT NULL, url text NOT NULL, query_name text NOT NULL,
+ last_seen timestamptz NOT NULL DEFAULT now(),
+ PRIMARY KEY(source,url,query_name),
+ FOREIGN KEY(source,url) REFERENCES jobs(source,url) ON DELETE CASCADE);
 CREATE TABLE IF NOT EXISTS crawl_runs (
  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, started_at timestamptz NOT NULL,
  ended_at timestamptz NOT NULL, report jsonb NOT NULL);
@@ -23,7 +28,7 @@ CREATE TABLE IF NOT EXISTS fetch_errors (
 """;
   await using var cmd=new NpgsqlCommand(sql,c);await cmd.ExecuteNonQueryAsync(ct);
  }
- public async Task SaveDiscovered(JobRef job,CancellationToken ct)
+ public async Task SaveDiscovered(JobRef job,CancellationToken ct,string? queryName=null)
  {
   await using var c=new NpgsqlConnection(connectionString);await c.OpenAsync(ct);
   const string sql="""
@@ -44,6 +49,18 @@ ON CONFLICT(source,url) DO UPDATE SET
   cmd.Parameters.AddWithValue("published",NpgsqlDbType.TimestampTz,(object?)job.PublishedAt??DBNull.Value);
   cmd.Parameters.AddWithValue("preview",(object?)job.Preview??DBNull.Value);
   await cmd.ExecuteNonQueryAsync(ct);
+  if(!string.IsNullOrWhiteSpace(queryName))
+  {
+   await using var queryCmd=new NpgsqlCommand("""
+INSERT INTO job_queries(source,url,query_name,last_seen)
+VALUES(@source,@url,@query,now())
+ON CONFLICT(source,url,query_name) DO UPDATE SET last_seen=excluded.last_seen
+""",c);
+   queryCmd.Parameters.AddWithValue("source",job.Source);
+   queryCmd.Parameters.AddWithValue("url",job.Url);
+   queryCmd.Parameters.AddWithValue("query",queryName);
+   await queryCmd.ExecuteNonQueryAsync(ct);
+  }
  }
  public async Task Save(JobDetail job,CancellationToken ct)
  {

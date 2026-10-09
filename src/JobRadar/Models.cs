@@ -16,4 +16,6 @@ public sealed class RadarOptions
  public bool EnabledDjinni { get; set; } = true;
  public bool EnabledRobota { get; set; } = true;
  public string[] RobotaQueries { get; set; } = [".net", "c-sharp", "backend"];
+ public bool EnabledWorkUa { get; set; } = false; // Requires source permission/live verification
+ public string[] WorkUaQueries { get; set; } = ["c#", ".net", "backend"];
 }
