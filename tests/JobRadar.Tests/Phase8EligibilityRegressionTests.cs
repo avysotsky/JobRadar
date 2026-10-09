@@ -26,8 +26,8 @@ public sealed class Phase8EligibilityRegressionTests
   {
    var snapshot=new VacancySnapshot(
     "fixture","https://example.org/jobs/"+test.Name,
-    test.Title,"Synthetic employer",test.Description,
-    test.Description,test.HasFullText,null,DateTimeOffset.UtcNow,
+    test.Title,"Synthetic employer",test.HasFullText?null:test.Description,
+    test.HasFullText?test.Description:"",test.HasFullText,null,DateTimeOffset.UtcNow,
     DateTimeOffset.UtcNow,["fixture-query"]);
    var assessment=VacancyTriage.Assess(snapshot);
    Assert.True(
