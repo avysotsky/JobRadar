@@ -80,3 +80,13 @@ Even a `QUERY_RECONCILED` result is not evidence of complete coverage of the pla
 - **GitHub Actions emergency pause:** all six active workflows were atomically removed from main in a5a621b959836d8ea1d9400dfe220006a2876b9e. No PR, push or schedule jobs should be re-enabled without explicit consent.
 
 See docs/PHASE8_ELIGIBILITY.md and scripts/validate-local.ps1. Source-grounded active/closed checks, deep coverage, and host deployment remain pending.
+
+### Phase 8 continuation — provider status evidence and export omissions
+
+- New nullable status checker infers **closed only from explicit provider-like HTML banner or short standalone closed page**, never from arbitrary description/footer text; it never infers open from an Apply button.
+- Adds PostgreSQL `job_status_checks` immutable observation history, plus `jobs.status_checked_at` and `jobs.status_evidence`. Retry and crawl paths use the same observation logic. Unknown remains UNKNOWN; historical closure remains auditable.
+- Protects status observations and description content against out-of-order fetch updates, without claiming an operational scan lease exists.
+- Changes legacy `open_status=false` entries without current evidence to NeedsReview rather than silently excluding them.
+- Adds `TotalStored` and `OmittedByLimit` to triage and raw JSONL export summaries; a capped export is not exhaustive.
+- Adds synthetic status tests, PostgreSQL status-history/order tests and regression updates. **All new test execution remains pending outside GitHub Actions; the code has NOT passed a .NET 10 build in this environment.**
+- Active workflow count remains zero by design. Do not restore GitHub Actions without user instruction.
