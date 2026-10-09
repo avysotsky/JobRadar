@@ -96,7 +96,9 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
        var description=Parsers.Description(source.Name,detailHtml);
        if(description.Length<80)
           throw new InvalidDataException("Vacancy detail missing or too short");
-       await storage.Save(new JobDetail(job,description,Parsers.OpenStatus(detailHtml),DateTimeOffset.UtcNow),ct);
+       var observed=VacancyStatusEvidence.FromProviderHtml(detailHtml);
+       await storage.Save(new JobDetail(job,description,observed.IsOpen,DateTimeOffset.UtcNow,
+         observed.EvidenceCode),ct);
       }
       details++;
      }
