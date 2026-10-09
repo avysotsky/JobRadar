@@ -91,7 +91,9 @@ INSERT INTO jobs(source,url,title,company,published_at,description,open_status,l
 VALUES (@source,@url,@title,@company,@published,@description,@open,@seen,@full,@statuschecked,@evidence)
 ON CONFLICT(source,url) DO UPDATE SET title=excluded.title,company=COALESCE(excluded.company,jobs.company),
  published_at=COALESCE(excluded.published_at,jobs.published_at),
- description=CASE WHEN excluded.description<>'' THEN excluded.description ELSE jobs.description END,
+ description=CASE WHEN excluded.description<>'' AND
+                   (jobs.full_text_at IS NULL OR excluded.full_text_at>=jobs.full_text_at)
+                   THEN excluded.description ELSE jobs.description END,
  open_status=CASE WHEN excluded.status_checked_at IS NOT NULL
                     AND (jobs.status_checked_at IS NULL
                       OR excluded.status_checked_at>=jobs.status_checked_at)
@@ -100,7 +102,7 @@ ON CONFLICT(source,url) DO UPDATE SET title=excluded.title,company=COALESCE(excl
                   THEN COALESCE(excluded.open_status,jobs.open_status)
                   ELSE jobs.open_status END,
  last_seen=GREATEST(excluded.last_seen,jobs.last_seen),
- full_text_at=COALESCE(excluded.full_text_at,jobs.full_text_at),
+ full_text_at=GREATEST(excluded.full_text_at,jobs.full_text_at),
  status_checked_at=CASE WHEN excluded.status_checked_at IS NOT NULL
                          AND (jobs.status_checked_at IS NULL
                            OR excluded.status_checked_at>=jobs.status_checked_at)
