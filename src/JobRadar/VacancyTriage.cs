@@ -31,7 +31,7 @@ public static class VacancyTriage
  private static readonly Regex Onsite = new(
   @"\bon[- ]site\b|\bon\s+site\b|тільки\s+(?:в\s+)?офіс|только\s+(?:в\s+)?офис|office[- ]only|office\s+only|must\s+(?:work|be).{0,25}(?:in\s+)?(?:the\s+)?office|офісн(?:а|ий|ої)\s+робот|офисн(?:ая|ый)\s+работ",Flags);
  private static readonly Regex NoRemote = new(
-  @"\bnot\s+(?:a\s+)?remote\b|\bno\s+remote\b|remote\s+(?:work|option|positions?|roles?)\s+(?:is\s+|are\s+)?(?:not\s+available|not\s+allowed|not\s+possible|unavailable)|remote\s+(?:not\s+available|is\s+not\s+possible)|без\s+(?:можливості|возможности)\s+(?:віддален|удалён|удален)|віддален[а-яіїє]*\s+не\s+передбач|удал[её]н[а-я]*\s+не\s+предусмотр|(?:віддален|дистанційн|удал[её]н)[а-яіїє]*\s+(?:робот[а-яіїє]*|работ[а-я]*)\s+(?:неможлив|невозмож|не\s+(?:передбач|предусмотр))",Flags);
+  @"\bnot\s+(?:a\s+)?remote\b|\bno\s+remote\b(?!\s+(?:access|clients?|servers?|systems?|teams?))|remote\s+(?:work|option|positions?|roles?)\s+(?:is\s+|are\s+)?(?:not\s+available|not\s+allowed|not\s+possible|unavailable)|remote\s+(?:not\s+available|is\s+not\s+possible)|без\s+(?:можливості|возможности)\s+(?:віддален|удалён|удален)|віддален[а-яіїє]*\s+не\s+передбач|удал[её]н[а-я]*\s+не\s+предусмотр|(?:віддален|дистанційн|удал[её]н)[а-яіїє]*\s+(?:робот[а-яіїє]*|работ[а-я]*)\s+(?:неможлив|невозмож|не\s+(?:передбач|предусмотр))",Flags);
  private static readonly Regex Remote = new(
   @"\b(?:fully[- ]remote|remote[- ]first|remote[- ]only|remote\s+(?:position|role|work|job|available|within)|work\s+(?:fully\s+)?remotely|work\s+from\s+home|wfh)\b|(?<![a-z])remote(?![a-z])|віддален|дистанційн|дистанционн|удал[её]н|робот[а-яіїє]*\s+з\s+дому",Flags);
 
