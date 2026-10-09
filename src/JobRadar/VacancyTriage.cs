@@ -9,7 +9,8 @@ public enum FitBucket { LikelyFit, NeedsReview, Excluded }
 public sealed record VacancySnapshot(
  string Source,string Url,string Title,string? Company,string? Preview,
  string Description,bool HasFullText,bool? IsOpen,DateTimeOffset? PublishedAt,
- DateTimeOffset LastSeen,IReadOnlyList<string> Queries);
+ DateTimeOffset LastSeen,IReadOnlyList<string> Queries,
+ DateTimeOffset? StatusCheckedAt=null,string? StatusEvidence=null);
 
 public sealed record VacancyAssessment(
  VacancySnapshot Vacancy,WorkMode WorkMode,FitBucket Bucket,int Score,
