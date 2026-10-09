@@ -6,15 +6,21 @@ using AngleSharp.Html.Parser;
 namespace JobRadar;
 
 public sealed record RobotaDetail(string Description, DateTimeOffset? PublishedAt);
+public sealed record RobotaCompanyFeed(
+ IReadOnlyDictionary<long,RobotaDetail> Details,int RawRecords,int? ReportedTotal)
+{
+ public bool PossiblyTruncated => RawRecords>=100 ||
+    (ReportedTotal.HasValue && ReportedTotal.Value>RawRecords);
+}
 
 /// <summary>
-/// Loads descriptions from Robota's publicly published company vacancies feed.
-/// A company response can be large; cache it per scan and never confuse a missing
-/// detail with a successful full-text fetch.
+/// Reads public published-company vacancies. Some company feeds are capped at
+/// 100 records; absence from a truncated feed NEVER proves vacancy closure.
+/// The response is cached per company per scan.
 /// </summary>
 public sealed class RobotaCompanyDetails(HttpFetcher fetcher)
 {
- private readonly Dictionary<long,Task<IReadOnlyDictionary<long,RobotaDetail>>> cache=new();
+ private readonly Dictionary<long,Task<RobotaCompanyFeed>> cache=new();
 
  public async Task<RobotaDetail> GetAsync(JobRef job,CancellationToken ct)
  {
@@ -27,25 +33,38 @@ public sealed class RobotaCompanyDetails(HttpFetcher fetcher)
    pending=FetchCompanyAsync(companyId,ct);
    cache.Add(companyId,pending);
   }
-  var vacancies=await pending;
-  if(!vacancies.TryGetValue(vacancyId,out var detail))
-    throw new InvalidDataException("Vacancy not included in public published company feed: "+job.Url);
+  var company=await pending;
+  if(!company.Details.TryGetValue(vacancyId,out var detail))
+  {
+   if(company.PossiblyTruncated)
+    throw new InvalidDataException("Robota company feed potentially truncated: "+
+      company.RawRecords+" returned, total "+(company.ReportedTotal?.ToString()??"unknown")+
+      "; vacancy absent from limited response (NOT evidence vacancy closed): "+job.Url);
+   throw new InvalidDataException("Vacancy not included in public published company feed (status unknown): "+job.Url);
+  }
   return detail;
  }
 
- private async Task<IReadOnlyDictionary<long,RobotaDetail>> FetchCompanyAsync(long companyId,CancellationToken ct)
+ private async Task<RobotaCompanyFeed> FetchCompanyAsync(long companyId,CancellationToken ct)
  {
   string url="https://api.robota.ua/companies/"+companyId+"/published-vacancies";
   var json=await fetcher.GetAsync(url,ct);
-  return ParseCompanyFeed(json);
+  return ParseCompanyResult(json);
  }
 
  public static IReadOnlyDictionary<long,RobotaDetail> ParseCompanyFeed(string json)
+  =>ParseCompanyResult(json).Details;
+
+ public static RobotaCompanyFeed ParseCompanyResult(string json)
  {
   using var parsed=JsonDocument.Parse(json);
   if(!parsed.RootElement.TryGetProperty("filteredVacancies",out var vacancies)
       || vacancies.ValueKind!=JsonValueKind.Array)
     throw new InvalidDataException("Robota company feed lacks filteredVacancies array");
+  int? reported=null;
+  if(parsed.RootElement.TryGetProperty("totalVacanciesCount",out var count)
+    && count.ValueKind==JsonValueKind.Number && count.TryGetInt32(out var total) && total>=0)
+     reported=total;
   var results=new Dictionary<long,RobotaDetail>();
   var htmlParser=new HtmlParser();
   foreach(var record in vacancies.EnumerateArray())
@@ -66,6 +85,6 @@ public sealed class RobotaCompanyDetails(HttpFetcher fetcher)
       date=published;
    results[id]=new RobotaDetail(text,date);
   }
-  return results;
+  return new RobotaCompanyFeed(results,vacancies.GetArrayLength(),reported);
  }
 }
