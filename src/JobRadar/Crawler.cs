@@ -19,7 +19,7 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
     {uncertain=true;error=e.Message;break;}
     string payload;
     try{payload=await fetcher.GetAsync(url,ct);}
-    catch(Exception e) when(e is not OperationCanceledException)
+    catch(Exception e) when(!ct.IsCancellationRequested)
     {await storage.SaveError(source.Name,url,e.Message,ct);error=e.Message;uncertain=true;break;}
     pages++;
     IReadOnlyList<JobRef> listings;
@@ -28,7 +28,7 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
      listings=source.ParseListings(payload);
      if(!source.IsSinglePageFeed)total??=source.ReportedTotal(payload);
     }
-    catch(Exception e) when(e is not OperationCanceledException)
+    catch(Exception e) when(!ct.IsCancellationRequested)
     {await storage.SaveError(source.Name,url,"Parse failure: "+e.Message,ct);error=e.Message;uncertain=true;break;}
     if(listings.Count==0)
     {uncertain=true;error="No vacancy identifiers extracted; potentially empty or broken source";break;}
@@ -47,10 +47,10 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
       await storage.Save(new JobDetail(enrichedJob,description,Parsers.OpenStatus(detailHtml),DateTimeOffset.UtcNow),ct);
       success++;
      }
-     catch(Exception e) when(e is not OperationCanceledException)
+     catch(Exception e) when(!ct.IsCancellationRequested)
      {fail++;await storage.SaveError(source.Name,job.Url,e.Message,ct);}
     }
-    if(source.IsSinglePageFeed)break;
+    if(source.IsSinglePageFeed || (total.HasValue && refs>=total.Value))break;
     // Page exhaustion must be evidenced by empty/duplicate page or a verified count.
     // A short page alone is NOT proof of exhaustion.
    }
