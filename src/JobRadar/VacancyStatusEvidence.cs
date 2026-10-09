@@ -40,7 +40,8 @@ public static class VacancyStatusEvidence
   var body=Parsers.Clean(doc.Body?.TextContent??"");
   // This fallback covers explicit, short standalone closed-message pages.
   // Never scan all text on a normal job page for arbitrary closure phrases.
-  if(body.Length is >0 and <=250 && Closed.IsMatch(body)
+  var standaloneClosure=Closed.Match(body);
+  if(body.Length is >0 and <=160 && standaloneClosure.Success && standaloneClosure.Index<=12
      && doc.QuerySelector("article,.vacancy-section,.job-description,[data-testid='job-description']") is null)
    return new VacancyStatusObservation(false,"html:standalone-closed-message");
   return new VacancyStatusObservation(null,"html:status-unverified");
