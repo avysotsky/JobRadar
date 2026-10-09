@@ -8,6 +8,7 @@ public interface IJobSource
  IReadOnlyList<JobRef> ParseListings(string html);
  // Feed pages cannot support exhaustive coverage without a count reconciliation.
  bool IsSinglePageFeed => false;
+ int? ReportedTotal(string payload) => Parsers.ReportedTotal(payload);
 }
 public sealed class DouSource:IJobSource
 {
