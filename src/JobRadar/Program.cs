@@ -3,6 +3,7 @@ using System.Text.Json;
 var configPath=Path.Combine(AppContext.BaseDirectory,"appsettings.json");
 if(!File.Exists(configPath)){Console.Error.WriteLine($"Missing configuration: {configPath}");return 2;}
 var options=JsonSerializer.Deserialize<RadarOptions>(await File.ReadAllTextAsync(configPath),new JsonSerializerOptions{PropertyNameCaseInsensitive=true}) ?? new RadarOptions();
+if(args.Contains("--smoke-robota"))return await RobotaLiveSmoke.RunAsync(options,CancellationToken.None);
 var cs=Environment.GetEnvironmentVariable("JOBRADAR_DB") ?? options.ConnectionString;
 var storage=new Storage(cs);
 try{await storage.Initialize(CancellationToken.None);}catch(Exception e){Console.Error.WriteLine("Database unavailable: "+e.Message);return 3;}
