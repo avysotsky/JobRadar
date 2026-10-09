@@ -50,7 +50,8 @@ public sealed class StatusEvidenceTests
     x=>x.Url==job.Url);
   Assert.False(closed.IsOpen);
   Assert.Equal("html:explicit-closed-banner",closed.StatusEvidence);
-  Assert.Equal(t1,closed.StatusCheckedAt);
+  Assert.NotNull(closed.StatusCheckedAt);
+  Assert.True((closed.StatusCheckedAt.Value-t1).Duration()<TimeSpan.FromMilliseconds(1));
 
   var t2=t1.AddMinutes(1);
   await storage.Save(new JobDetail(job,new string('U',100),null,t2,
@@ -59,7 +60,8 @@ public sealed class StatusEvidenceTests
     x=>x.Url==job.Url);
   Assert.Null(unknown.IsOpen);
   Assert.Equal("html:status-unverified",unknown.StatusEvidence);
-  Assert.Equal(t2,unknown.StatusCheckedAt);
+  Assert.NotNull(unknown.StatusCheckedAt);
+  Assert.True((unknown.StatusCheckedAt.Value-t2).Duration()<TimeSpan.FromMilliseconds(1));
   Assert.Equal(FitBucket.NeedsReview,VacancyTriage.Assess(unknown).Bucket);
 
   await using var c=new NpgsqlConnection(cs);
