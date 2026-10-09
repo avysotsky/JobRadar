@@ -4,6 +4,12 @@
 
 **Status:** CI-tested ingestion prototype with Robota.ua, DOU and Djinni sources, supplemental RSS search queries, persistent PostgreSQL deployment and full-text JSONL export. This is **not** an exhaustive crawler; read the [coverage status](docs/STATUS.md) and [coverage design](docs/PHASE2_COVERAGE.md).
 
+## GitHub Actions spending protection (2026-10-09)
+
+**All six GitHub Actions workflows are disabled** (removed atomically in [commit a5a621b](https://github.com/avysotsky/JobRadar/commit/a5a621b959836d8ea1d9400dfe220006a2876b9e)) due to the user's explicit instruction. Historical GitHub CI results below describe past runs only; they are not evidence of any new validation. **Do not restore workflows, automatic PR checks, scheduled jobs, or workflow_dispatch without explicit permission.** Use [local test validation](scripts/validate-local.ps1) instead.
+
+Phase 8 adds conservative geographical and role-eligibility review gates, multilingual synthetic regression cases, and review-backlog metrics. See [Phase 8 design](docs/PHASE8_ELIGIBILITY.md). The new code requires local build/tests before it can be described as validated.
+
 ## Sources and evidence
 
 | Site | Discovery | Full-text | Evidence |
