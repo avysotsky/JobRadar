@@ -17,6 +17,16 @@ CREATE TABLE IF NOT EXISTS jobs (
  open_status boolean, last_seen timestamptz NOT NULL, full_text_at timestamptz,
  PRIMARY KEY(source,url));
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS preview text;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS status_checked_at timestamptz;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS status_evidence text;
+CREATE TABLE IF NOT EXISTS job_status_checks (
+ id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ source text NOT NULL, url text NOT NULL,
+ checked_at timestamptz NOT NULL, open_status boolean,
+ evidence text NOT NULL,
+ FOREIGN KEY(source,url) REFERENCES jobs(source,url) ON DELETE CASCADE);
+CREATE INDEX IF NOT EXISTS ix_job_status_checks_latest
+ ON job_status_checks(source,url,checked_at DESC);
 CREATE TABLE IF NOT EXISTS job_queries (
  source text NOT NULL, url text NOT NULL, query_name text NOT NULL,
  last_seen timestamptz NOT NULL DEFAULT now(),
@@ -77,13 +87,32 @@ ON CONFLICT(source,url,query_name) DO UPDATE SET last_seen=excluded.last_seen
  {
   await using var c=new NpgsqlConnection(connectionString);await c.OpenAsync(ct);
   const string sql="""
-INSERT INTO jobs(source,url,title,company,published_at,description,open_status,last_seen,full_text_at)
-VALUES (@source,@url,@title,@company,@published,@description,@open,@seen,@full)
+INSERT INTO jobs(source,url,title,company,published_at,description,open_status,last_seen,full_text_at,status_checked_at,status_evidence)
+VALUES (@source,@url,@title,@company,@published,@description,@open,@seen,@full,@statuschecked,@evidence)
 ON CONFLICT(source,url) DO UPDATE SET title=excluded.title,company=COALESCE(excluded.company,jobs.company),
  published_at=COALESCE(excluded.published_at,jobs.published_at),
- description=CASE WHEN excluded.description<>'' THEN excluded.description ELSE jobs.description END,
- open_status=COALESCE(excluded.open_status,jobs.open_status),last_seen=excluded.last_seen,
- full_text_at=COALESCE(excluded.full_text_at,jobs.full_text_at);
+ description=CASE WHEN excluded.description<>'' AND
+                   (jobs.full_text_at IS NULL OR excluded.full_text_at>=jobs.full_text_at)
+                   THEN excluded.description ELSE jobs.description END,
+ open_status=CASE WHEN excluded.status_checked_at IS NOT NULL
+                    AND (jobs.status_checked_at IS NULL
+                      OR excluded.status_checked_at>=jobs.status_checked_at)
+                  THEN excluded.open_status
+                  WHEN excluded.status_checked_at IS NULL
+                  THEN COALESCE(excluded.open_status,jobs.open_status)
+                  ELSE jobs.open_status END,
+ last_seen=GREATEST(excluded.last_seen,jobs.last_seen),
+ full_text_at=GREATEST(excluded.full_text_at,jobs.full_text_at),
+ status_checked_at=CASE WHEN excluded.status_checked_at IS NOT NULL
+                         AND (jobs.status_checked_at IS NULL
+                           OR excluded.status_checked_at>=jobs.status_checked_at)
+                         THEN excluded.status_checked_at ELSE jobs.status_checked_at END,
+ status_evidence=CASE WHEN excluded.status_checked_at IS NOT NULL
+                         AND (jobs.status_checked_at IS NULL
+                           OR excluded.status_checked_at>=jobs.status_checked_at)
+                      THEN excluded.status_evidence ELSE jobs.status_evidence END;
+INSERT INTO job_status_checks(source,url,checked_at,open_status,evidence)
+SELECT @source,@url,@seen,@open,@evidence WHERE @evidence IS NOT NULL;
 DELETE FROM fetch_errors WHERE source=@source AND url=@url;
 """;
   await using var cmd=new NpgsqlCommand(sql,c);
@@ -91,9 +120,17 @@ DELETE FROM fetch_errors WHERE source=@source AND url=@url;
   cmd.Parameters.AddWithValue("title",job.Job.Title);cmd.Parameters.AddWithValue("company",(object?)job.Job.Company??DBNull.Value);
   cmd.Parameters.AddWithValue("published",NpgsqlDbType.TimestampTz,(object?)job.Job.PublishedAt??DBNull.Value);
   cmd.Parameters.AddWithValue("description",job.Description);
-  cmd.Parameters.AddWithValue("open",(object?)job.Open??DBNull.Value);
+  // With DBNull.Value Npgsql cannot infer parameter types, particularly in
+  // the standalone status-history INSERT ... SELECT ... WHERE expression.
+  // Keep types explicit even when the status was not verified by the provider.
+  cmd.Parameters.AddWithValue("open",NpgsqlDbType.Boolean,(object?)job.Open??DBNull.Value);
   cmd.Parameters.AddWithValue("seen",job.FetchedAt);
   cmd.Parameters.AddWithValue("full",NpgsqlDbType.TimestampTz,job.Description.Length>0?(object)job.FetchedAt:DBNull.Value);
+  var observed=!string.IsNullOrWhiteSpace(job.StatusEvidence);
+  cmd.Parameters.AddWithValue("statuschecked",NpgsqlDbType.TimestampTz,
+    observed?(object)job.FetchedAt:DBNull.Value);
+  cmd.Parameters.AddWithValue("evidence",NpgsqlDbType.Text,
+    observed?(object)job.StatusEvidence!:DBNull.Value);
   await cmd.ExecuteNonQueryAsync(ct);
  }
  public async Task SaveError(string source,string url,string error,CancellationToken ct)

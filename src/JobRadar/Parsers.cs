@@ -58,10 +58,7 @@ public static class Parsers
  }
  public static bool? OpenStatus(string html)
  {
-  var doc=Parser.ParseDocument(html);
-  var t=Clean(doc.Body?.TextContent ?? "").ToLowerInvariant();
-  if(new[]{"вакансія завершена", "вакансія закрита", "ця вакансія вже завершена", "job is closed", "position is closed", "no longer accepting applications"}.Any(t.Contains)) return false;
-  return null;
+  return VacancyStatusEvidence.FromProviderHtml(html).IsOpen;
  }
  public static int? ReportedTotal(string html)
  {

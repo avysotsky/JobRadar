@@ -92,8 +92,14 @@ public sealed class VacancyTriageTests
  [Fact]
  public void ExplicitClosedVacancyIsExcludedButUnknownNotMarkedClosed()
  {
-  var closed=VacancyTriage.Assess(Job("Middle .NET Backend",
+  var legacy=VacancyTriage.Assess(Job("Middle .NET Backend",
     "Fully remote ASP.NET Core PostgreSQL EF Core REST API",open:false));
+  Assert.Equal(FitBucket.NeedsReview,legacy.Bucket);
+  Assert.Contains(legacy.Warnings,w=>w.Contains("Исторический"));
+  var confirmed=Job("Middle .NET Backend",
+    "Fully remote ASP.NET Core PostgreSQL EF Core REST API",open:false)
+    with {StatusEvidence="html:explicit-closed-banner",StatusCheckedAt=DateTimeOffset.UtcNow};
+  var closed=VacancyTriage.Assess(confirmed);
   Assert.Equal(FitBucket.Excluded,closed.Bucket);
   var unknown=VacancyTriage.Assess(Job("Middle .NET Backend",
     "Fully remote ASP.NET Core PostgreSQL EF Core REST API"));

@@ -1,0 +1,299 @@
+[
+  {
+    "Name": "remote-ua",
+    "Title": "Middle .NET Backend Developer",
+    "Description": "Fully remote from Ukraine. ASP.NET Core Web API, REST services, PostgreSQL, EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "LikelyFit",
+    "WarningContains": null,
+    "HasFullText": true
+  },
+  {
+    "Name": "remote-uk",
+    "Title": "Middle C# Backend",
+    "Description": "Remote within the United Kingdom only. ASP.NET Core REST API, PostgreSQL.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "страны",
+    "HasFullText": true
+  },
+  {
+    "Name": "remote-eu",
+    "Title": "Middle .NET Backend",
+    "Description": "Remote within EU. ASP.NET Core, PostgreSQL, EF Core and REST API.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "страны",
+    "HasFullText": true
+  },
+  {
+    "Name": "remote-poland",
+    "Title": "Middle .NET Backend",
+    "Description": "Remote only from Poland. ASP.NET Core, PostgreSQL, EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "страны",
+    "HasFullText": true
+  },
+  {
+    "Name": "remote-poland-alt",
+    "Title": "Middle .NET Backend",
+    "Description": "Remote in Poland only. ASP.NET Core, PostgreSQL, EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "страны",
+    "HasFullText": true
+  },
+  {
+    "Name": "must-be-based",
+    "Title": "Middle C# Backend",
+    "Description": "Fully remote, must be based in Germany. ASP.NET Core PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "страны",
+    "HasFullText": true
+  },
+  {
+    "Name": "eu-candidates",
+    "Title": "Middle C# Backend",
+    "Description": "EU residents only. Fully remote. ASP.NET Core PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "страны",
+    "HasFullText": true
+  },
+  {
+    "Name": "ukraine-ineligible",
+    "Title": "Middle .NET Backend",
+    "Description": "Fully remote excluding Ukraine. ASP.NET Core REST API and PostgreSQL.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "страны",
+    "HasFullText": true
+  },
+  {
+    "Name": "ua-timezone-not-residency",
+    "Title": "Middle .NET Backend",
+    "Description": "Fully remote across Europe, work on EU timezone. ASP.NET Core PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "LikelyFit",
+    "WarningContains": null,
+    "HasFullText": true
+  },
+  {
+    "Name": "relocation-required",
+    "Title": "Middle .NET Backend",
+    "Description": "Fully remote during probation, but relocation is required. ASP.NET Core PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "релокация",
+    "HasFullText": true
+  },
+  {
+    "Name": "relocation-support",
+    "Title": "Middle .NET Backend",
+    "Description": "Fully remote in Ukraine. Relocation support is available but optional. ASP.NET Core PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "LikelyFit",
+    "WarningContains": null,
+    "HasFullText": true
+  },
+  {
+    "Name": "ua-relocation",
+    "Title": "Middle .NET Backend",
+    "Description": "Повністю віддалена робота, обов'язковий переїзд. ASP.NET Core, REST API PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "релокация",
+    "HasFullText": true
+  },
+  {
+    "Name": "ru-relocation",
+    "Title": "Middle C# Backend",
+    "Description": "Удаленная работа, обязательный переезд. ASP.NET Core PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "релокация",
+    "HasFullText": true
+  },
+  {
+    "Name": "remote-team-only",
+    "Title": "Middle .NET Backend",
+    "Description": "We build remote teams and secure remote access systems. ASP.NET Core PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Unknown",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "не подтверждён",
+    "HasFullText": true
+  },
+  {
+    "Name": "remote-negated",
+    "Title": "Middle .NET Backend",
+    "Description": "Remote work is not available. Office work in Kyiv. ASP.NET Core PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Onsite",
+    "ExpectedBucket": "Excluded",
+    "WarningContains": "офис",
+    "HasFullText": true
+  },
+  {
+    "Name": "ua-remote-negated",
+    "Title": "Middle .NET Backend",
+    "Description": "Віддалена робота неможлива. ASP.NET Core PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Onsite",
+    "ExpectedBucket": "Excluded",
+    "WarningContains": "офис",
+    "HasFullText": true
+  },
+  {
+    "Name": "ru-remote-negated",
+    "Title": "Middle .NET Backend",
+    "Description": "Удаленная работа невозможна. ASP.NET Core PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Onsite",
+    "ExpectedBucket": "Excluded",
+    "WarningContains": "офис",
+    "HasFullText": true
+  },
+  {
+    "Name": "hybrid-cloud",
+    "Title": "Middle .NET Backend",
+    "Description": "Fully remote, hybrid cloud architecture with ASP.NET Core REST API, PostgreSQL, EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "LikelyFit",
+    "WarningContains": null,
+    "HasFullText": true
+  },
+  {
+    "Name": "hybrid-schedule",
+    "Title": "Middle .NET Backend",
+    "Description": "Remote sometimes, 2 days in office per week. ASP.NET Core REST API PostgreSQL.",
+    "ExpectedWorkMode": "Hybrid",
+    "ExpectedBucket": "Excluded",
+    "WarningContains": "гибрид",
+    "HasFullText": true
+  },
+  {
+    "Name": "onsite-ukraine",
+    "Title": "Middle .NET Backend",
+    "Description": "Тільки в офісі, віддалена робота не передбачена. ASP.NET Core PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Onsite",
+    "ExpectedBucket": "Excluded",
+    "WarningContains": "офис",
+    "HasFullText": true
+  },
+  {
+    "Name": "english-spoken-required",
+    "Title": "Middle .NET Backend",
+    "Description": "Fully remote Ukraine. English B2 spoken required. ASP.NET Core PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "разговорный",
+    "HasFullText": true
+  },
+  {
+    "Name": "english-written",
+    "Title": "Middle .NET Backend",
+    "Description": "Fully remote Ukraine. Written English B1, asynchronous communication. ASP.NET Core PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "LikelyFit",
+    "WarningContains": null,
+    "HasFullText": true
+  },
+  {
+    "Name": "net-missing-preview",
+    "Title": "Backend Engineer",
+    "Description": "Remote developer, integrate services and APIs. Brief listing only.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "анонс",
+    "HasFullText": false
+  },
+  {
+    "Name": "java-only",
+    "Title": "Middle Java Backend",
+    "Description": "Fully remote Ukraine. Java Spring Boot PostgreSQL REST API.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "Excluded",
+    "WarningContains": "C#/.NET",
+    "HasFullText": true
+  },
+  {
+    "Name": "dotnet-synonym",
+    "Title": "Middle dotnet Backend",
+    "Description": "Fully remote Ukraine. REST API PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "LikelyFit",
+    "WarningContains": null,
+    "HasFullText": true
+  },
+  {
+    "Name": "desktop-core-title",
+    "Title": "Middle WPF .NET Backend Developer",
+    "Description": "Fully remote Ukraine. ASP.NET Core REST API PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "desktop",
+    "HasFullText": true
+  },
+  {
+    "Name": "desktop-mandatory-body",
+    "Title": "Middle C# Backend",
+    "Description": "Fully remote Ukraine, WPF is required. ASP.NET Core REST API PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "desktop",
+    "HasFullText": true
+  },
+  {
+    "Name": "desktop-optional",
+    "Title": "Middle C# Backend",
+    "Description": "Fully remote Ukraine, WPF nice to have, not mandatory. ASP.NET Core PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "LikelyFit",
+    "WarningContains": null,
+    "HasFullText": true
+  },
+  {
+    "Name": "middle-senior",
+    "Title": "Middle / Senior .NET Backend",
+    "Description": "Fully remote Ukraine. ASP.NET Core REST API PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "Смешанный",
+    "HasFullText": true
+  },
+  {
+    "Name": "senior-only",
+    "Title": "Senior .NET Backend",
+    "Description": "Fully remote Ukraine. ASP.NET Core REST API PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "Excluded",
+    "WarningContains": "Senior/Lead",
+    "HasFullText": true
+  },
+  {
+    "Name": "no-backend-role",
+    "Title": "Middle .NET Developer",
+    "Description": "Fully remote Ukraine. Build 3D desktop visualization tools and native rendering pipelines.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "Backend/API",
+    "HasFullText": true
+  },
+  {
+    "Name": "unknown-mode",
+    "Title": "Middle C# Backend",
+    "Description": "ASP.NET Core Web API PostgreSQL EF Core; schedule to be discussed.",
+    "ExpectedWorkMode": "Unknown",
+    "ExpectedBucket": "NeedsReview",
+    "WarningContains": "не подтверждён",
+    "HasFullText": true
+  },
+  {
+    "Name": "security-no-remote-access",
+    "Title": "Middle .NET Backend",
+    "Description": "No remote access to production servers. The position is fully remote in Ukraine. ASP.NET Core REST API PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "LikelyFit",
+    "WarningContains": null,
+    "HasFullText": true
+  }
+]

@@ -6,7 +6,10 @@ namespace JobRadar;
 
 public sealed record TriageExportResult(
  string AuditFile,string ShortlistFile,string ReviewFile,int Evaluated,
- int LikelyFit,int NeedsReview,int Excluded,int Shortlisted);
+ int LikelyFit,int NeedsReview,int Excluded,int Shortlisted,
+ int HighScoreNeedsReview,int GeoRestrictedNeedsReview,
+ int IncompleteTextNeedsReview,int UnverifiedOpenStatus,
+ long TotalStored,long OmittedByLimit);
 
 public static class TriageExport
 {
@@ -22,6 +25,7 @@ public static class TriageExport
  public static async Task<TriageExportResult> WriteAsync(
   Storage storage,string directory,int maxRecords,CancellationToken ct)
  {
+  var totalStored=await storage.CountVacanciesForTriageAsync(ct);
   var records=await storage.ReadVacanciesForTriageAsync(maxRecords,ct);
   var evaluated=records.Select(VacancyTriage.Assess)
    .OrderBy(x=>x.Bucket).ThenByDescending(x=>x.Score)
@@ -47,8 +51,15 @@ public static class TriageExport
    }
   }
   int likely=evaluated.Count(x=>x.Bucket==FitBucket.LikelyFit);
+  var pending=evaluated.Where(x=>x.Bucket==FitBucket.NeedsReview).ToArray();
+  var restricted=pending.Count(x=>VacancyEligibility.Analyze(
+    x.Vacancy.Title,x.Vacancy.Description.Length>0?x.Vacancy.Description:x.Vacancy.Preview??"")
+    .LocationRestricted);
   return new TriageExportResult(audit,shortlist,review,evaluated.Length,
-    likely,evaluated.Count(x=>x.Bucket==FitBucket.NeedsReview),
-    evaluated.Count(x=>x.Bucket==FitBucket.Excluded),likely);
+    likely,pending.Length,evaluated.Count(x=>x.Bucket==FitBucket.Excluded),likely,
+    pending.Count(x=>x.Score>=65),restricted,
+    pending.Count(x=>!x.Vacancy.HasFullText),
+    evaluated.Count(x=>x.Vacancy.IsOpen is null),
+    totalStored,Math.Max(0L,totalStored-evaluated.Length));
  }
 }

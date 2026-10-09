@@ -39,6 +39,12 @@ public sealed class TriageIntegrationTests
   {
    var result=await TriageExport.WriteAsync(store,folder,50000,CancellationToken.None);
    Assert.Equal(result.Evaluated,result.LikelyFit+result.NeedsReview+result.Excluded);
+   Assert.True(result.TotalStored>=result.Evaluated);
+   Assert.Equal(Math.Max(0L,result.TotalStored-result.Evaluated),result.OmittedByLimit);
+   Assert.True(result.HighScoreNeedsReview>=0);
+   Assert.True(result.IncompleteTextNeedsReview>=0);
+   Assert.True(result.GeoRestrictedNeedsReview>=0);
+   Assert.True(result.UnverifiedOpenStatus>=3);
    var all=await File.ReadAllLinesAsync(result.AuditFile);
    var selected=await File.ReadAllLinesAsync(result.ShortlistFile);
    var review=await File.ReadAllLinesAsync(result.ReviewFile);

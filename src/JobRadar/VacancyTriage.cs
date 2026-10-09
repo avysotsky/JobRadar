@@ -9,7 +9,8 @@ public enum FitBucket { LikelyFit, NeedsReview, Excluded }
 public sealed record VacancySnapshot(
  string Source,string Url,string Title,string? Company,string? Preview,
  string Description,bool HasFullText,bool? IsOpen,DateTimeOffset? PublishedAt,
- DateTimeOffset LastSeen,IReadOnlyList<string> Queries);
+ DateTimeOffset LastSeen,IReadOnlyList<string> Queries,
+ DateTimeOffset? StatusCheckedAt=null,string? StatusEvidence=null);
 
 public sealed record VacancyAssessment(
  VacancySnapshot Vacancy,WorkMode WorkMode,FitBucket Bucket,int Score,
@@ -21,7 +22,7 @@ public static class VacancyTriage
   RegexOptions.IgnoreCase|RegexOptions.CultureInvariant|RegexOptions.Compiled;
 
  private static readonly Regex Net = new(
-  @"(?<![a-z0-9])(?:asp\.net|\.net|c#|csharp|c[- ]sharp)(?![a-z0-9])",Flags);
+  @"(?<![a-z0-9])(?:asp\.net|\.net|dotnet|c#|csharp|c[- ]sharp)(?![a-z0-9])",Flags);
  private static readonly Regex Middle = new(
   @"\b(?:middle|mid[- ]level|junior[- ]strong|strong[- ]junior|мідл|мидл|середн(?:ій|его)\s+рів(?:ень|ня))\b",Flags);
  private static readonly Regex SeniorTitle = new(
@@ -31,7 +32,7 @@ public static class VacancyTriage
  private static readonly Regex Onsite = new(
   @"\bon[- ]site\b|\bon\s+site\b|тільки\s+(?:в\s+)?офіс|только\s+(?:в\s+)?офис|office[- ]only|office\s+only|must\s+(?:work|be).{0,25}(?:in\s+)?(?:the\s+)?office|офісн(?:а|ий|ої)\s+робот|офисн(?:ая|ый)\s+работ",Flags);
  private static readonly Regex NoRemote = new(
-  @"\bnot\s+remote\b|\bno\s+remote\b|remote\s+(?:not\s+available|is\s+not\s+possible)|без\s+(?:можливості|возможности)\s+(?:віддален|удалён|удален)|віддален[а-яіїє]*\s+не\s+передбач|удал[её]н[а-я]*\s+не\s+предусмотр",Flags);
+  @"\bnot\s+(?:a\s+)?remote\b|\bno\s+remote\b(?!\s+(?:access|clients?|servers?|systems?|teams?))|remote\s+(?:work|option|positions?|roles?)\s+(?:is\s+|are\s+)?(?:not\s+available|not\s+allowed|not\s+possible|unavailable)|remote\s+(?:not\s+available|is\s+not\s+possible)|без\s+(?:можливості|возможности)\s+(?:віддален|удалён|удален)|віддален[а-яіїє]*\s+не\s+передбач|удал[её]н[а-я]*\s+не\s+предусмотр|(?:віддален|дистанційн|удал[её]н)[а-яіїє]*\s+(?:робот[а-яіїє]*|работ[а-я]*)\s+(?:неможлив|невозмож|не\s+(?:передбач|предусмотр))",Flags);
  private static readonly Regex Remote = new(
   @"\b(?:fully[- ]remote|remote[- ]first|remote[- ]only|remote\s+(?:position|role|work|job|available|within)|work\s+(?:fully\s+)?remotely|work\s+from\s+home|wfh)\b|(?<![a-z])remote(?![a-z])|віддален|дистанційн|дистанционн|удал[её]н|робот[а-яіїє]*\s+з\s+дому",Flags);
 
@@ -58,6 +59,8 @@ public static class VacancyTriage
   var reasons=new List<string>();
   var warnings=new List<string>();
   var mode=DetectWorkMode(title,body);
+  var eligibility=VacancyEligibility.Analyze(title,body);
+  warnings.AddRange(eligibility.Warnings);
   int score=0;
 
   if(Net.IsMatch(all)){score+=35;reasons.Add("C#/.NET указан в вакансии");}
@@ -94,16 +97,22 @@ public static class VacancyTriage
   if(Regex.IsMatch(all,@"\b(?:wpf|kubernetes|aws|azure)\b",Flags))
    warnings.Add("Встречаются WPF / cloud / Kubernetes — проверить требования");
   if(!job.HasFullText)warnings.Add("Полный текст не получен: оценка только по анонсу");
-  if(job.IsOpen==false)warnings.Add("Источник ранее явно обозначил вакансию закрытой");
+  if(!job.HasFullText && !Net.IsMatch(all))warnings.Add("Короткий анонс без .NET не является доказательством нерелевантности");
+  var verifiedClosure=job.IsOpen==false &&
+    job.StatusEvidence is ("html:explicit-closed-banner" or "html:standalone-closed-message");
+  if(verifiedClosure)warnings.Add("Источник явно обозначил вакансию закрытой — свидетельство сохранено");
+  else if(job.IsOpen==false)warnings.Add("Исторический признак закрытия без проверяемого свидетельства — требуется проверка");
   if(job.IsOpen is null)warnings.Add("Актуальность вакансии не подтверждена");
 
   var clearlySenior=SeniorTitle.IsMatch(title)&&!Middle.IsMatch(title);
   FitBucket tier;
-  if(mode is WorkMode.Hybrid or WorkMode.Onsite || job.IsOpen==false
-    || clearlySenior || !Net.IsMatch(all))
+  if(mode is WorkMode.Hybrid or WorkMode.Onsite || verifiedClosure
+    || clearlySenior || (!Net.IsMatch(all) && job.HasFullText))
    tier=FitBucket.Excluded;
-  else if(mode==WorkMode.Remote && job.HasFullText && score>=65 && !ExplicitB2.IsMatch(all)
-    && !SpokenEnglish.IsMatch(all) && !SeniorTitle.IsMatch(title))
+  else if(mode==WorkMode.Remote && job.HasFullText && job.IsOpen!=false
+    && score>=65 && !ExplicitB2.IsMatch(all)
+    && !SpokenEnglish.IsMatch(all) && !SeniorTitle.IsMatch(title)
+    && !eligibility.RequiresReview)
    tier=FitBucket.LikelyFit;
   else tier=FitBucket.NeedsReview;
   return new VacancyAssessment(job,mode,tier,score,reasons,warnings);

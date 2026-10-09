@@ -1,6 +1,6 @@
 # JobRadar status — 2026-10-09
 
-## Verified by GitHub Actions
+## Historical GitHub Actions verification (before disablement)
 
 - .NET 10 restore, build, tests, and PostgreSQL 16 integration tests pass.
 - PostgreSQL creation uses a transaction-scoped advisory lock to avoid parallel-test schema creation races.
@@ -40,8 +40,8 @@ Even a `QUERY_RECONCILED` result is not evidence of complete coverage of the pla
 - `--pending-status` (zero network requests) reports ready, deferred, blocked, exhausted jobs; `--retry-failed` replays a configurable bounded batch.
 - HTTP 401/403/404 are not automatically retried; source authorization restrictions are respected. Jobs remain visible, not deleted.
 - Source-level trend flag: >50% loss of unique references relative to an earlier nonfailed run with at least 20 references marks a query `PARTIAL` and emits `CoverageWarning`.
-- `.NET CI` tests PostgreSQL retry queue and coverage trend; the runner also exercises `--pending-status` against its disposable PostgreSQL 16 service.
-- GitHub Actions public-source diagnostics scheduled daily for DOU and Djinni, not a persistent production crawl.
+- Historical CI tested the PostgreSQL retry queue and coverage trend, including `--pending-status` against disposable PostgreSQL 16. CI is now disabled.
+- Former GitHub Actions public-source diagnostics for DOU and Djinni are disabled and never constituted a persistent production crawl.
 - **Still incomplete:** provider-side caps, full pagination beyond RSS, Work.ua access, real Jooble key, active/closed classification and operational deployment.
 
 ## Phase 5 — Robota paging verification
@@ -70,3 +70,23 @@ Even a `QUERY_RECONCILED` result is not evidence of complete coverage of the pla
 - Spoken English and B2+ are warning signals, preserving candidates for manual inspection; other soft stack matches influence priority, not irreversible deletion.
 - Null open status remains *unknown* and does not prove the vacancy currently accepts applications.
 - No automatic application sending or actual remote/English fact verification; heuristic limitations are documented.
+
+## Phase 8 — eligibility evidence (locally validated)
+
+- New multilingual review gates for remote country restrictions, mandatory relocation, backend duties, and mandatory WPF/WinForms.
+- Negated remote language and incomplete descriptions no longer silently produce some false-positive or false-negative classifications.
+- Added 33 synthetic regression scenarios plus summary counters for high-scoring manual-review jobs, geo warnings, preview-only review, and unknown provider open status.
+- **Validation state (2026-10-09):** user ran .NET SDK 10.0.401 Release build and **84/84 xUnit tests passed**, including real PostgreSQL 16 integration tests on a separate `jobradar_test` database at port 54321. Live-source completeness, actual remote eligibility, and production deployment remain unverified.
+- **GitHub Actions emergency pause:** all six active workflows were atomically removed from main in a5a621b959836d8ea1d9400dfe220006a2876b9e. No PR, push or schedule jobs should be re-enabled without explicit consent.
+
+See docs/PHASE8_ELIGIBILITY.md and scripts/validate-local.ps1. Source-grounded active/closed checks, deep coverage, and host deployment remain pending.
+
+### Phase 8 continuation — provider status evidence and export omissions
+
+- New nullable status checker infers **closed only from explicit provider-like HTML banner or short standalone closed page**, never from arbitrary description/footer text; it never infers open from an Apply button.
+- Adds PostgreSQL `job_status_checks` immutable observation history, plus `jobs.status_checked_at` and `jobs.status_evidence`. Retry and crawl paths use the same observation logic. Unknown remains UNKNOWN; historical closure remains auditable.
+- Protects status observations and description content against out-of-order fetch updates, without claiming an operational scan lease exists.
+- Changes legacy `open_status=false` entries without current evidence to NeedsReview rather than silently excluding them.
+- Adds `TotalStored` and `OmittedByLimit` to triage and raw JSONL export summaries; a capped export is not exhaustive.
+- Adds synthetic status tests, PostgreSQL status-history/order tests and regression updates. **Local Release build and all 84/84 tests passed on 2026-10-09 with PostgreSQL integration enabled; no GitHub Actions were run.**
+- Active workflow count remains zero by design. Do not restore GitHub Actions without user instruction.
