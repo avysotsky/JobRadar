@@ -81,6 +81,31 @@ FROM job_status_checks WHERE source=@s AND url=@u
  }
 
  [Fact]
+ public async Task LateArrivingOldClosureDoesNotOverwriteNewerUnknownObservation()
+ {
+  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  if(string.IsNullOrWhiteSpace(cs))return;
+  var storage=new Storage(cs);
+  await storage.Initialize(CancellationToken.None);
+  var id=Guid.NewGuid().ToString("N");
+  var job=new JobRef("ordering-"+id,"https://example.org/status/"+id,
+   "Middle .NET Backend",null,null);
+  await storage.SaveDiscovered(job,CancellationToken.None);
+  var recent=DateTimeOffset.UtcNow;
+  var older=recent.AddMinutes(-10);
+  await storage.Save(new JobDetail(job,new string('A',100),null,recent,
+   "html:status-unverified"),CancellationToken.None);
+  await storage.Save(new JobDetail(job,new string('B',100),false,older,
+   "html:explicit-closed-banner"),CancellationToken.None);
+  var snapshot=Assert.Single(await storage.ReadVacanciesForTriageAsync(50000,CancellationToken.None),
+   x=>x.Url==job.Url);
+  Assert.Null(snapshot.IsOpen);
+  Assert.Equal("html:status-unverified",snapshot.StatusEvidence);
+  Assert.NotNull(snapshot.StatusCheckedAt);
+  Assert.True((snapshot.StatusCheckedAt.Value-recent).Duration()<TimeSpan.FromMilliseconds(1));
+ }
+
+ [Fact]
  public async Task RobotaCompanyDescriptionDoesNotInventAStatusCheck()
  {
   var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
