@@ -22,6 +22,7 @@ public sealed class StatusEvidenceTests
  [InlineData("<article><p>The product monitors when a job is closed. Build .NET APIs.</p></article>")]
  [InlineData("<footer>Position is closed</footer><main><article>Build .NET APIs.</article></main>")]
  [InlineData("<main><p>Remote. Build .NET APIs.</p><button>Apply now</button></main>")]
+ [InlineData("<body>Our backend product must detect when a job is closed, using .NET.</body>")]
  [InlineData("<div role='alert'>Job is open for applications</div><article>Build .NET APIs.</article>")]
  [InlineData("<script type='application/ld+json'>{\"@type\":\"JobPosting\",\"validThrough\":\"2026-01-01\"}</script><article>Build .NET APIs</article>")]
  public void UnverifiedSourceDoesNotInferOpenOrClosed(string html)
