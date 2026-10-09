@@ -70,3 +70,13 @@ Even a `QUERY_RECONCILED` result is not evidence of complete coverage of the pla
 - Spoken English and B2+ are warning signals, preserving candidates for manual inspection; other soft stack matches influence priority, not irreversible deletion.
 - Null open status remains *unknown* and does not prove the vacancy currently accepts applications.
 - No automatic application sending or actual remote/English fact verification; heuristic limitations are documented.
+
+## Phase 8 — eligibility evidence (branch; pending local validation)
+
+- New multilingual review gates for remote country restrictions, mandatory relocation, backend duties, and mandatory WPF/WinForms.
+- Negated remote language and incomplete descriptions no longer silently produce some false-positive or false-negative classifications.
+- Added 32 synthetic regression scenarios plus summary counters for high-scoring manual-review jobs, geo warnings, preview-only review, and unknown provider open status.
+- **Validation state:** new Phase 8 code is not yet built or run in a .NET 10 runtime in this environment. Do not call it PASS or merged before local validation.
+- **GitHub Actions emergency pause:** all six active workflows were atomically removed from main in a5a621b959836d8ea1d9400dfe220006a2876b9e. No PR, push or schedule jobs should be re-enabled without explicit consent.
+
+See docs/PHASE8_ELIGIBILITY.md and scripts/validate-local.ps1. Source-grounded active/closed checks, deep coverage, and host deployment remain pending.
