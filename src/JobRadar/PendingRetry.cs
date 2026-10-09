@@ -12,7 +12,8 @@ public sealed record PendingRetryReport(DateTimeOffset StartedAt, DateTimeOffset
 /// This is independent from RSS/search freshness: disappearing from a feed does
 /// not erase a previously discovered vacancy.
 /// </summary>
-public sealed class PendingRetry(HttpFetcher fetcher, Storage storage, RadarOptions options)
+public sealed class PendingRetry(HttpFetcher fetcher, Storage storage, RadarOptions options,
+ Action<string>? progress=null)
 {
  public string[] EnabledSources()
  {
@@ -35,6 +36,7 @@ public sealed class PendingRetry(HttpFetcher fetcher, Storage storage, RadarOpti
   var before=await storage.GetPendingCountsAsync(sources,maxAttempts,ageMinutes,ct);
   var pending=await storage.GetPendingVacanciesAsync(sources,maxAttempts,ageMinutes,limit,ct);
   int attempted=0,recovered=0,failed=0;
+  progress?.Invoke($"Retry queue: total={before.Total}, ready={before.Ready}, batch={pending.Count}");
   var robota=new RobotaCompanyDetails(fetcher);
   foreach(var item in pending)
   {
@@ -68,11 +70,16 @@ public sealed class PendingRetry(HttpFetcher fetcher, Storage storage, RadarOpti
     failed++;
     await storage.SaveError(item.Job.Source,item.Job.Url,e.Message,ct);
    }
+   finally
+   {
+    progress?.Invoke($"Retry queue: processed={attempted}/{pending.Count}, recovered={recovered}, failed={failed}");
+   }
   }
 
   var after=await storage.GetPendingCountsAsync(sources,maxAttempts,ageMinutes,ct);
   var report=new PendingRetryReport(started,DateTimeOffset.UtcNow,attempted,recovered,failed,before,after);
   await storage.SavePendingRetryReportAsync(report,ct);
+  progress?.Invoke($"Retry queue: FINISHED, recovered={recovered}, failed={failed}, remaining={after.Total}");
   return report;
  }
 
