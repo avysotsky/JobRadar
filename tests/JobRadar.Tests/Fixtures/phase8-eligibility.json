@@ -286,5 +286,14 @@
     "ExpectedBucket": "NeedsReview",
     "WarningContains": "не подтверждён",
     "HasFullText": true
+  },
+  {
+    "Name": "security-no-remote-access",
+    "Title": "Middle .NET Backend",
+    "Description": "No remote access to production servers. The position is fully remote in Ukraine. ASP.NET Core REST API PostgreSQL EF Core.",
+    "ExpectedWorkMode": "Remote",
+    "ExpectedBucket": "LikelyFit",
+    "WarningContains": null,
+    "HasFullText": true
   }
 ]
