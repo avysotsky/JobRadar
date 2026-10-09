@@ -52,7 +52,7 @@ If JOBRADAR_TEST_DB is absent, the repository's existing database tests skip the
 
 ## Remaining Phase 8 work
 
-- Introduce provider-grounded status checks, checked-at timestamps and evidence origin (UNKNOWN where unsupported).
+- Validate existing provider-HTML closure heuristics against real, lawful source examples; add provider-specific open/closed signals only where trustworthy, retaining UNKNOWN elsewhere.
 - Compare rankings against manually labeled collected real jobs stored privately, never in this public repository.
 - Add DB-wide scan lease, host deployment validation, and authorized deeper source pagination.
 - Quantify measured precision and recall before asserting production quality gains.
