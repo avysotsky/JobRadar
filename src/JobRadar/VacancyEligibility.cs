@@ -46,7 +46,7 @@ public static class VacancyEligibility
  private static readonly Regex Relocation = new(
   @"\b(?:relocation\s+(?:is\s+)?(?:required|mandatory)|"
   + @"(?:must|need\s+to|required\s+to)\s+relocate|"
-  + @"requires?\s+relocation|relocate\s+to)\b"
+  + @"requires?\s+relocation|(?<!no\s)(?<!not\s)(?:mandatory|required)\s+relocation|relocate\s+to)\b"
   + @"|(?:обов['’]язков[а-яіїє]*\s+(?:переїзд|релокац)|"
   + @"(?:переїзд|релокац[а-яіїє]*)\s+обов['’]язков[а-яіїє]*|"
   + @"обязательн[а-я]*\s+(?:переезд|релокац)|"
