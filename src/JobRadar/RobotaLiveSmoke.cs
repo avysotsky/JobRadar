@@ -13,7 +13,7 @@ public static class RobotaLiveSmoke
   using var client=new HttpClient{Timeout=TimeSpan.FromSeconds(options.TimeoutSeconds)};
   client.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
   var fetcher=new HttpFetcher(client,Math.Max(1000,options.DelayMilliseconds));
-  var source=new RobotaSource(".net");
+  var source=new RobotaApiSource(".net");
   var result=new Dictionary<string,object?>();
   try
   {
@@ -21,7 +21,7 @@ public static class RobotaLiveSmoke
    var jobs=source.ParseListings(html);
    result["searchUrl"]=source.ListingUrl(0);
    result["listingCount"]=jobs.Count;
-   result["reportedTotal"]=Parsers.ReportedTotal(html);
+   result["reportedTotal"]=source.ReportedTotal(html);
    if(jobs.Count==0)throw new InvalidDataException("No Robota vacancy anchors extracted.");
    // This explicit fixture was visible publicly on 2026-10-09. It is only a smoke
    // example; the live run does NOT establish search completeness.
