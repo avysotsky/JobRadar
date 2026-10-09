@@ -1,16 +1,49 @@
 # JobRadar
 
-C#/.NET 10 job vacancy ingestion service for Ukrainian job boards.
+.NET 10 prototype for personal job-vacancy ingestion. Repository: https://github.com/avysotsky/JobRadar
 
-## Status
+**Status:** Phase 1 prototype, not a production-ready exhaustive crawler. See [current coverage limitations](docs/STATUS.md).
 
-Initial GitHub bootstrap. The Phase 1 source tree is being imported. This is a prototype; live source coverage and builds have not yet been validated.
+## Included
+- DOU and Djinni draft HTML adapters
+- HTTP fetcher with timeouts/retries and throttling
+- PostgreSQL tables for vacancy details, crawl run reports and fetch errors
+- JSON crawl reports
+- xUnit parser fixture tests
+- GitHub Actions build/test workflow
 
-## Planned components
+## Requirements
+- .NET 10 SDK
+- PostgreSQL database (e.g. localhost:5432)
 
-- DOU and Djinni source adapters
-- PostgreSQL storage and crawl audit
-- Coverage and retry diagnostics
-- Tests and Windows-to-Linux portability
+## Set up PostgreSQL
+Create a database and dedicated user, for example from `scripts/init-db.sql`. **Change the placeholder password** before use; do not commit credentials.
 
-Do not interpret missing matches as proof of no vacancies if a source has not been checked successfully.
+For the current PowerShell session:
+
+```powershell
+$env:JOBRADAR_DB = "Host=localhost;Port=5432;Database=jobradar;Username=jobradar;Password=<your password>"
+```
+
+## Build and test
+```powershell
+dotnet restore tests/JobRadar.Tests/JobRadar.Tests.csproj
+dotnet build tests/JobRadar.Tests/JobRadar.Tests.csproj -c Release
+dotnet test tests/JobRadar.Tests/JobRadar.Tests.csproj -c Release
+```
+
+## Run a single scan
+```powershell
+dotnet run --project src/JobRadar/JobRadar.csproj -- --once
+```
+
+Scheduled mode (long-running process):
+```powershell
+dotnet run --project src/JobRadar/JobRadar.csproj
+```
+Configured Kyiv hours: 08:00, 13:00, 19:00. Output reports are written under `reports/`.
+
+## Coverage and safety
+DOU pagination is **not implemented**; the report will mark it partial. Djinni live parsing and paging are unverified. A report status of `UNVERIFIED_COVERAGE` does not mean exhaustive success. Full vacancy description requires successful detail fetch; an unavailable source is not considered proof of no jobs. The project must comply with website usage policies and rate limits. No CAPTCHA/auth bypassing.
+
+This code has not yet been validated against live DOU/Djinni markup; build status must be confirmed using CI.
