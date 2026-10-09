@@ -109,7 +109,8 @@ public static class VacancyTriage
   if(mode is WorkMode.Hybrid or WorkMode.Onsite || verifiedClosure
     || clearlySenior || (!Net.IsMatch(all) && job.HasFullText))
    tier=FitBucket.Excluded;
-  else if(mode==WorkMode.Remote && job.HasFullText && score>=65 && !ExplicitB2.IsMatch(all)
+  else if(mode==WorkMode.Remote && job.HasFullText && job.IsOpen!=false
+    && score>=65 && !ExplicitB2.IsMatch(all)
     && !SpokenEnglish.IsMatch(all) && !SeniorTitle.IsMatch(title)
     && !eligibility.RequiresReview)
    tier=FitBucket.LikelyFit;
