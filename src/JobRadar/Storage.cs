@@ -120,13 +120,17 @@ DELETE FROM fetch_errors WHERE source=@source AND url=@url;
   cmd.Parameters.AddWithValue("title",job.Job.Title);cmd.Parameters.AddWithValue("company",(object?)job.Job.Company??DBNull.Value);
   cmd.Parameters.AddWithValue("published",NpgsqlDbType.TimestampTz,(object?)job.Job.PublishedAt??DBNull.Value);
   cmd.Parameters.AddWithValue("description",job.Description);
-  cmd.Parameters.AddWithValue("open",(object?)job.Open??DBNull.Value);
+  // With DBNull.Value Npgsql cannot infer parameter types, particularly in
+  // the standalone status-history INSERT ... SELECT ... WHERE expression.
+  // Keep types explicit even when the status was not verified by the provider.
+  cmd.Parameters.AddWithValue("open",NpgsqlDbType.Boolean,(object?)job.Open??DBNull.Value);
   cmd.Parameters.AddWithValue("seen",job.FetchedAt);
   cmd.Parameters.AddWithValue("full",NpgsqlDbType.TimestampTz,job.Description.Length>0?(object)job.FetchedAt:DBNull.Value);
   var observed=!string.IsNullOrWhiteSpace(job.StatusEvidence);
   cmd.Parameters.AddWithValue("statuschecked",NpgsqlDbType.TimestampTz,
     observed?(object)job.FetchedAt:DBNull.Value);
-  cmd.Parameters.AddWithValue("evidence",observed?(object)job.StatusEvidence!:DBNull.Value);
+  cmd.Parameters.AddWithValue("evidence",NpgsqlDbType.Text,
+    observed?(object)job.StatusEvidence!:DBNull.Value);
   await cmd.ExecuteNonQueryAsync(ct);
  }
  public async Task SaveError(string source,string url,string error,CancellationToken ct)
