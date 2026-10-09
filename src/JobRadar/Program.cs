@@ -31,7 +31,7 @@ if(args.Contains("--jooble-once"))
  return await JoobleRunner.RunAsync(storage,options,CancellationToken.None);
 using var http=new HttpClient{Timeout=TimeSpan.FromSeconds(options.TimeoutSeconds)};
 http.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
-var sources=new List<IJobSource>();if(options.EnabledDou)sources.Add(new DouSource());if(options.EnabledDjinni)sources.Add(new DjinniSource());
+var sources=FeedVariants.Create(options).ToList();
 if(options.EnabledRobota)foreach(var term in options.RobotaQueries.Distinct(StringComparer.OrdinalIgnoreCase))sources.Add(new RobotaApiSource(term));
 if(options.EnabledWorkUa)foreach(var term in options.WorkUaQueries.Distinct(StringComparer.OrdinalIgnoreCase))sources.Add(new WorkUaSource(term));
 var crawler=new Crawler(new HttpFetcher(http,options.DelayMilliseconds),storage,options);
