@@ -23,6 +23,13 @@ if(args.Contains("--export-jsonl"))
  Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new {Path=path,Rows=count,MaxRecords=options.ExportMaxRecords}));
  return 0;
 }
+if(args.Contains("--triage-jsonl"))
+{
+ var summary=await TriageExport.WriteAsync(storage,Path.GetFullPath(options.OutputDirectory),
+   Math.Clamp(options.ExportMaxRecords,1,50000),CancellationToken.None);
+ Console.WriteLine(JsonSerializer.Serialize(summary,new JsonSerializerOptions{WriteIndented=true}));
+ return 0;
+}
 if(args.Contains("--pending-status"))
 {
  using var statusClient=new HttpClient();

@@ -61,3 +61,12 @@ Even a `QUERY_RECONCILED` result is not evidence of complete coverage of the pla
 - Verified Docker Compose build, database startup, pending-status CLI and JSONL export in GitHub Actions with a disposable test password.
 - GitHub Actions **does not** deploy this collector on the user's machine or provide persistent hosted storage; user-controlled Docker host/credentials are still required.
 - Robota company feed may still cap at 100; Work.ua HTTP 403 remains unresolved, and no site-wide completeness guarantee exists.
+
+## Phase 7 — remote-only .NET candidate triage (2026-10-09)
+
+- Added deterministic .NET/C# matching with source-linked reasons for score, remote format (Remote/Hybrid/Onsite/Unknown), explicit exclusions, and warnings.
+- CLI `--triage-jsonl` exports three independent views from PostgreSQL: high-confidence text-supported remote candidates, review-needed records, and complete audit (including excluded records). No network calls.
+- Hybrid, explicit onsite and Senior/Lead titles cannot enter the remote shortlist. Unknown remote or preview-only remains review-needed.
+- Spoken English and B2+ are warning signals, preserving candidates for manual inspection; other soft stack matches influence priority, not irreversible deletion.
+- Null open status remains *unknown* and does not prove the vacancy currently accepts applications.
+- No automatic application sending or actual remote/English fact verification; heuristic limitations are documented.

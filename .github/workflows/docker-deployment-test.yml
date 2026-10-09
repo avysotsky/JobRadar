@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - jobradar/phase6-multi-feed-deployment
+      - jobradar/phase7-vacancy-triage
       - main
     paths:
       - 'Dockerfile'
@@ -15,6 +16,7 @@ on:
       - 'Dockerfile'
       - '.dockerignore'
       - 'compose.yaml'
+      - '.github/workflows/docker-deployment-test.yml'
       - 'src/JobRadar/**'
   workflow_dispatch:
 permissions:
@@ -37,6 +39,8 @@ jobs:
         run: docker compose run --rm collector --pending-status
       - name: Export empty database as JSONL
         run: docker compose run --rm collector --export-jsonl
+      - name: Export triage shortlist and audit
+        run: docker compose run --rm collector --triage-jsonl
       - name: Tear down ephemeral CI resources
         if: always()
         run: docker compose down -v --remove-orphans
