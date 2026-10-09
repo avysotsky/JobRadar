@@ -1,0 +1,23 @@
+name: Robota.ua live smoke
+on:
+  push:
+    branches:
+      - jobradar/robota-ingestion-ci-fix
+    paths:
+      - '.github/workflows/robota-smoke.yml'
+      - 'src/JobRadar/**'
+  workflow_dispatch:
+  schedule:
+    - cron: '17 7 * * *'
+permissions:
+  contents: read
+jobs:
+  public-source-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet run --project src/JobRadar/JobRadar.csproj -- --smoke-robota
