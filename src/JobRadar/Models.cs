@@ -14,6 +14,10 @@ public sealed class RadarOptions
  public string OutputDirectory { get; set; } = "reports";
  public string JoobleLocation {get;set;} = "Ukraine";
  public string[] JoobleQueries {get;set;} = [".NET", "C# backend"];
+ public bool RetryAfterCrawl {get;set;} = true;
+ public int PendingBatchSize {get;set;} = 20;
+ public int PendingMaxAttempts {get;set;} = 5;
+ public int PendingMinimumAgeMinutes {get;set;} = 360;
  public bool EnabledDou { get; set; } = true;
  public bool EnabledDjinni { get; set; } = true;
  public bool EnabledRobota { get; set; } = true;

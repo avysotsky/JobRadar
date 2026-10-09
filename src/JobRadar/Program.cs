@@ -10,6 +10,20 @@ if(args.Contains("--smoke-workua"))return await PublicSourceSmoke.RunAsync(new W
 var cs=Environment.GetEnvironmentVariable("JOBRADAR_DB") ?? options.ConnectionString;
 var storage=new Storage(cs);
 try{await storage.Initialize(CancellationToken.None);}catch(Exception e){Console.Error.WriteLine("Database unavailable: "+e.Message);return 3;}
+if(args.Contains("--pending-status"))
+{
+ var retry=new PendingRetry(new HttpFetcher(new HttpClient(),0),storage,options);
+ Console.WriteLine(PendingRetry.Render(await retry.StatusAsync(CancellationToken.None)));
+ return 0;
+}
+if(args.Contains("--retry-failed"))
+{
+ using var client=new HttpClient{Timeout=TimeSpan.FromSeconds(options.TimeoutSeconds)};
+ client.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
+ var retry=new PendingRetry(new HttpFetcher(client,options.DelayMilliseconds),storage,options);
+ Console.WriteLine(PendingRetry.Render(await retry.RunAsync(CancellationToken.None)));
+ return 0;
+}
 if(args.Contains("--jooble-once"))
  return await JoobleRunner.RunAsync(storage,options,CancellationToken.None);
 using var http=new HttpClient{Timeout=TimeSpan.FromSeconds(options.TimeoutSeconds)};
@@ -24,6 +38,11 @@ async Task Run(CancellationToken ct)
  try
  {
   var report=await crawler.RunAsync(sources,ct);
+  if(options.RetryAfterCrawl)
+  {
+   var retryReport=await new PendingRetry(new HttpFetcher(http,options.DelayMilliseconds),storage,options).RunAsync(ct);
+   Console.WriteLine("Pending details: "+PendingRetry.Render(retryReport));
+  }
   Directory.CreateDirectory(options.OutputDirectory);
   var file=Path.Combine(options.OutputDirectory,$"crawl-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}.json");
   var json=JsonSerializer.Serialize(report,new JsonSerializerOptions{WriteIndented=true});
