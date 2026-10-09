@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - jobradar/phase5-robota-pagination-audit
+      - main
     paths:
       - 'src/JobRadar/**'
       - '.github/workflows/robota-paging-diagnostics.yml'

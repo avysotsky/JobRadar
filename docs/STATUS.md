@@ -43,3 +43,10 @@ Even a `QUERY_RECONCILED` result is not evidence of complete coverage of the pla
 - `.NET CI` tests PostgreSQL retry queue and coverage trend; the runner also exercises `--pending-status` against its disposable PostgreSQL 16 service.
 - GitHub Actions public-source diagnostics scheduled daily for DOU and Djinni, not a persistent production crawl.
 - **Still incomplete:** provider-side caps, full pagination beyond RSS, Work.ua access, real Jooble key, active/closed classification and operational deployment.
+
+## Phase 5 — Robota paging verification
+
+- Public API diagnostic on `менеджер`: 52,767 reported; pages 0,1,2 each supplied 59 unique IDs, no overlaps. This is a three-page sample, not an exhaustive scan.
+- Probe on `backend`: 36 reported, 35 extracted, page 1 empty. The crawler now records RawRecords and DroppedRecords and marks queries PARTIAL on parse loss.
+- Company JSON `totalVacanciesCount` is compared to filteredVacancies length; missing jobs in potentially truncated (100-item) responses remain unknown, not closed.
+- Multi-page reconciliation, duplicate pages, raw record drops and company caps covered in xUnit and PostgreSQL tests.
