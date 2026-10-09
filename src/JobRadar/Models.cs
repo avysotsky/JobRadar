@@ -18,6 +18,7 @@ public sealed class RadarOptions
  public int PendingBatchSize {get;set;} = 20;
  public int PendingMaxAttempts {get;set;} = 5;
  public int PendingMinimumAgeMinutes {get;set;} = 360;
+ public int ExportMaxRecords {get;set;} = 2000;
  public int DetailRefreshHours {get;set;} = 24;
  public string[] DouExtraKeywords {get;set;} = [];
  public string[] DjinniExtraKeywords {get;set;} = [];

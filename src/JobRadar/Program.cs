@@ -12,6 +12,17 @@ if(args.Contains("--smoke-workua"))return await PublicSourceSmoke.RunAsync(new W
 var cs=Environment.GetEnvironmentVariable("JOBRADAR_DB") ?? options.ConnectionString;
 var storage=new Storage(cs);
 try{await storage.Initialize(CancellationToken.None);}catch(Exception e){Console.Error.WriteLine("Database unavailable: "+e.Message);return 3;}
+if(args.Contains("--export-jsonl"))
+{
+ var output=Path.GetFullPath(options.OutputDirectory);
+ Directory.CreateDirectory(output);
+ var path=Path.Combine(output,$"jobs-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}.jsonl");
+ await using var writer=new StreamWriter(path,false,new System.Text.UTF8Encoding(false));
+ int count=await storage.ExportJobsJsonlAsync(writer,Math.Clamp(options.ExportMaxRecords,1,50000),CancellationToken.None);
+ await writer.FlushAsync();
+ Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new {Path=path,Rows=count,MaxRecords=options.ExportMaxRecords}));
+ return 0;
+}
 if(args.Contains("--pending-status"))
 {
  using var statusClient=new HttpClient();
