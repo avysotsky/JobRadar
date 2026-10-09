@@ -67,7 +67,7 @@ ON CONFLICT(source,url) DO UPDATE SET
   cmd.Parameters.AddWithValue("url",job.Url);
   cmd.Parameters.AddWithValue("title",job.Title);
   cmd.Parameters.AddWithValue("company",(object?)job.Company??DBNull.Value);
-  cmd.Parameters.AddWithValue("published",NpgsqlDbType.TimestampTz,(object?)job.PublishedAt??DBNull.Value);
+  cmd.Parameters.AddWithValue("published",NpgsqlDbType.TimestampTz,(object?)job.PublishedAt?.ToUniversalTime()??DBNull.Value);
   cmd.Parameters.AddWithValue("preview",(object?)job.Preview??DBNull.Value);
   await cmd.ExecuteNonQueryAsync(ct);
   if(!string.IsNullOrWhiteSpace(queryName))
@@ -118,17 +118,18 @@ DELETE FROM fetch_errors WHERE source=@source AND url=@url;
   await using var cmd=new NpgsqlCommand(sql,c);
   cmd.Parameters.AddWithValue("source",job.Job.Source);cmd.Parameters.AddWithValue("url",job.Job.Url);
   cmd.Parameters.AddWithValue("title",job.Job.Title);cmd.Parameters.AddWithValue("company",(object?)job.Job.Company??DBNull.Value);
-  cmd.Parameters.AddWithValue("published",NpgsqlDbType.TimestampTz,(object?)job.Job.PublishedAt??DBNull.Value);
+  cmd.Parameters.AddWithValue("published",NpgsqlDbType.TimestampTz,(object?)job.Job.PublishedAt?.ToUniversalTime()??DBNull.Value);
   cmd.Parameters.AddWithValue("description",job.Description);
   // With DBNull.Value Npgsql cannot infer parameter types, particularly in
   // the standalone status-history INSERT ... SELECT ... WHERE expression.
   // Keep types explicit even when the status was not verified by the provider.
   cmd.Parameters.AddWithValue("open",NpgsqlDbType.Boolean,(object?)job.Open??DBNull.Value);
-  cmd.Parameters.AddWithValue("seen",job.FetchedAt);
-  cmd.Parameters.AddWithValue("full",NpgsqlDbType.TimestampTz,job.Description.Length>0?(object)job.FetchedAt:DBNull.Value);
+  var fetchedUtc=job.FetchedAt.ToUniversalTime();
+  cmd.Parameters.AddWithValue("seen",NpgsqlDbType.TimestampTz,fetchedUtc);
+  cmd.Parameters.AddWithValue("full",NpgsqlDbType.TimestampTz,job.Description.Length>0?(object)fetchedUtc:DBNull.Value);
   var observed=!string.IsNullOrWhiteSpace(job.StatusEvidence);
   cmd.Parameters.AddWithValue("statuschecked",NpgsqlDbType.TimestampTz,
-    observed?(object)job.FetchedAt:DBNull.Value);
+    observed?(object)fetchedUtc:DBNull.Value);
   cmd.Parameters.AddWithValue("evidence",NpgsqlDbType.Text,
     observed?(object)job.StatusEvidence!:DBNull.Value);
   await cmd.ExecuteNonQueryAsync(ct);
@@ -176,7 +177,8 @@ RETURNING requests_used;
  {
   await using var c=new NpgsqlConnection(connectionString);await c.OpenAsync(ct);
   await using var cmd=new NpgsqlCommand("INSERT INTO crawl_runs(started_at,ended_at,report) VALUES(@s,@e,@r)",c);
-  cmd.Parameters.AddWithValue("s",report.StartedAt);cmd.Parameters.AddWithValue("e",report.EndedAt);
+  cmd.Parameters.AddWithValue("s",NpgsqlDbType.TimestampTz,report.StartedAt.ToUniversalTime());
+  cmd.Parameters.AddWithValue("e",NpgsqlDbType.TimestampTz,report.EndedAt.ToUniversalTime());
   cmd.Parameters.AddWithValue("r",NpgsqlDbType.Jsonb,System.Text.Json.JsonSerializer.Serialize(report));await cmd.ExecuteNonQueryAsync(ct);
  }
 }
