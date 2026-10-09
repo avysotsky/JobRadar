@@ -95,6 +95,8 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
       }
       if(source is RobotaApiSource)
       {
+       if(!options.EnabledRobotaDetails)
+        continue; // preserve the indexed vacancy/preview without calling HTTP 403 endpoint
        var detail=await robotaDetails.GetAsync(job,ct);
        if(detail.Description.Length<80)
           throw new InvalidDataException("Robota detail missing or too short");
