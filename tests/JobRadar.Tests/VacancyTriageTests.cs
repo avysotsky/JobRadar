@@ -49,6 +49,15 @@ public sealed class VacancyTriageTests
  }
 
  [Fact]
+ public void HybridCloudTechnologyDoesNotMeanHybridOffice()
+ {
+  var result=VacancyTriage.Assess(Job("Middle .NET Backend",
+   "Fully remote position. ASP.NET Core REST API, hybrid cloud architecture, PostgreSQL and EF Core."));
+  Assert.Equal(WorkMode.Remote,result.WorkMode);
+  Assert.Equal(FitBucket.LikelyFit,result.Bucket);
+ }
+
+ [Fact]
  public void MixedMiddleSeniorRemainsReviewNotAutoExcludedOrLikely()
  {
   var a=VacancyTriage.Assess(Job("Middle / Senior .NET Backend",

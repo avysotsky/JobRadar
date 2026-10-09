@@ -136,3 +136,21 @@ dotnet run --project src/JobRadar/JobRadar.csproj -- --smoke-feed-variants
 ```
 
 The export is bounded at `ExportMaxRecords` (default 2,000) and may not include all historical records without changing that setting. It does not assert that vacancies are still active.
+
+## Middle .NET remote shortlist (Phase 7)
+
+The optional local rules-based triage produces **three JSONL files** from already stored vacancies. It performs zero job-board HTTP requests and makes no claims that an advertisement is currently active.
+
+```powershell
+dotnet run --project src/JobRadar/JobRadar.csproj -- --triage-jsonl
+# Docker:
+docker compose run --rm collector --triage-jsonl
+```
+
+- `triage-remote-likely-*.jsonl`: strong .NET matches with explicitly described remote work and a full description. Not a booking or employment guarantee.
+- `triage-review-*.jsonl`: unknown/ambiguous work mode, optional English requirements, insufficient description, or mixed seniority; these still need manual investigation.
+- `triage-all-*.jsonl`: every evaluated vacancy, including explicit hybrid/office, Senior/Lead, unrelated stacks, or independently flagged closed postings. Each record contains a score, matching signals, warnings, and the source URL.
+
+**Remote is a hard constraint**: explicit office attendance or hybrid schedules are excluded from the shortlist. If remote is not confirmed, the vacancy goes to human review, not to the confident recommendations. English B2+/spoken requirements are warning signals requiring checking, rather than silent exclusions. Full-text missing and active status unknown remain visible.
+
+Rules-based screening is intentionally conservative and can make errors, especially with multilingual advertisements or negation. Never automatically submit applications or delete records based on this ranking. Review source descriptions before responding. [Detailed decision rules](docs/PHASE7_TRIAGE.md).
