@@ -21,6 +21,7 @@
 - `job_queries` preserves the keyword query provenance of every discovered vacancy.
 - `fetch_errors` tracks unreadable descriptions and source/network errors. **Even jobs no longer present in a feed are retained and retried.**
 - `retry_runs` records attempts to recover older missing full texts. `--pending-status` displays backlog without network traffic.
+- Raw Robota JSON record counts are compared to parsed vacancy IDs; dropped entries cause PARTIAL with DroppedRecords metrics.
 - `QUERY_RECONCILED` indicates matching the API's total for **one query**, not complete coverage of a job board.
 - `PARTIAL` and `FAILED` are explicit; do not treat them as zero matching jobs.
 - PostgreSQL 16 integration tests and .NET 10 xUnit run in GitHub Actions.
@@ -50,6 +51,7 @@ Diagnostics that do not require PostgreSQL:
 
 ```powershell
 dotnet run --project src/JobRadar/JobRadar.csproj -- --smoke-robota
+dotnet run --project src/JobRadar/JobRadar.csproj -- --smoke-robota-pages
 dotnet run --project src/JobRadar/JobRadar.csproj -- --smoke-dou
 dotnet run --project src/JobRadar/JobRadar.csproj -- --smoke-djinni
 dotnet run --project src/JobRadar/JobRadar.csproj -- --smoke-workua
@@ -91,3 +93,7 @@ dotnet run --project src/JobRadar/JobRadar.csproj -- --jooble-once
 ```
 
 Do not set historical usage to zero when unknown. Reservations occur atomically in PostgreSQL before network calls and remain consumed even if the request fails. Jooble results are **snippets only**, not verified full descriptions; no publication dates are inferred from the API's `updated` field. See [phase 3 design](docs/PHASE3_JOOBLE.md).
+
+## Robota.ua pagination coverage
+
+Live paging diagnostic for broad query **менеджер**: 52,767 total reported; three distinct pages of 59, 177 unique vacancy IDs, no overlap. A `backend` probe reported 36 matches but only 35 parseable IDs. Such mismatches are not treated as complete results. The company published-vacancies JSON can return 100 records while reporting more vacancies; absence from that list is not evidence that an ad is closed. See [Phase 5 notes](docs/PHASE5_ROBOTA_PAGINATION.md).

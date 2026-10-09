@@ -1,0 +1,22 @@
+name: Robota pagination diagnostics
+on:
+  push:
+    branches:
+      - jobradar/phase5-robota-pagination-audit
+      - main
+    paths:
+      - 'src/JobRadar/**'
+      - '.github/workflows/robota-paging-diagnostics.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-search-pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet run --project src/JobRadar/JobRadar.csproj -- --smoke-robota-pages

@@ -14,7 +14,7 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
   var previousCounts=await storage.GetPreviousReferenceCountsAsync(ct);
   foreach(var source in sources)
   {
-   int pages=0,references=0,details=0,failedDetails=0;
+   int pages=0,references=0,details=0,failedDetails=0,rawRecords=0,droppedRecords=0;
    int? total=null;
    string? error=null;
    bool uncertain=source.IsSinglePageFeed;
@@ -38,6 +38,18 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
     try
     {
      listings=source.ParseListings(payload);
+     if(source is RobotaApiSource robotaSource)
+     {
+      var raw=robotaSource.RawDocumentCount(payload);
+      rawRecords+=raw;
+      var dropped=Math.Max(0,raw-listings.Count);
+      droppedRecords+=dropped;
+      if(dropped>0)
+      {
+       uncertain=true;
+       error??="Robota API contained records with missing or invalid vacancy identifiers";
+      }
+     }
      if(!source.IsSinglePageFeed)total??=source.ReportedTotal(payload);
     }
     catch(Exception e) when(!ct.IsCancellationRequested)
@@ -114,7 +126,8 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
      failedDetails>0||uncertain||error!=null?"PARTIAL":
      reconciled?"QUERY_RECONCILED":"UNVERIFIED_COVERAGE";
    summaries.Add(new SourceResult(source.Name,pages,references,details,failedDetails,total,status,error,
-     previousRefs>0?previousRefs:null,warning));
+     previousRefs>0?previousRefs:null,warning,
+     source is RobotaApiSource?rawRecords:null,source is RobotaApiSource?droppedRecords:null));
   }
   var report=new CrawlReport(started,DateTimeOffset.UtcNow,summaries);
   await storage.SaveReport(report,ct);
