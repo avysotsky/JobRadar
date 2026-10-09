@@ -54,7 +54,9 @@ public sealed class PendingRetry(HttpFetcher fetcher, Storage storage, RadarOpti
     {
      var html=await fetcher.GetAsync(job.Url,ct);
      var description=Parsers.Description(job.Source,html);
-     detail=new JobDetail(job,description,Parsers.OpenStatus(html),DateTimeOffset.UtcNow);
+     var observed=VacancyStatusEvidence.FromProviderHtml(html);
+     detail=new JobDetail(job,description,observed.IsOpen,DateTimeOffset.UtcNow,
+       observed.EvidenceCode);
     }
     if(detail.Description.Length<80)
      throw new InvalidDataException("Full description unavailable or too short");
