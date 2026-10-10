@@ -188,6 +188,30 @@ public sealed class ProjectTrackingTests
  }
 
  [Fact]
+ public async Task WwwProviderAliasIsDeduplicatedAgainstManualBookmark()
+ {
+  var url="https://www.freelancehunt.com/project/automation/333.html";
+  var project=new FreelancehuntProject(333,url,"C# API automation",
+   "C# .NET trading integration",200m,"UAH",["C#"],0,false,false,
+   DateTimeOffset.UtcNow,"Open");
+  var bookmark=new TrackedProject("freelancehunt",
+   ProjectTrackerPolicy.Url("freelancehunt",url),
+   "Manual project",null,null,DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,
+   "Applied",DateTimeOffset.UtcNow,1);
+  using var output=new StringWriter();
+  var summary=await OpportunityPreview.WriteAsync([],
+   new Dictionary<(string,string),JobDiscoveryHistory>(),[],
+   new Dictionary<OpportunityInputKind,TextReader>
+   {[OpportunityInputKind.Freelancehunt]=
+     new StringReader(JsonlOutput.Serialize(FreelancehuntProjects.Rank(project)))},
+   output,CancellationToken.None,[bookmark]);
+  Assert.Equal(1,summary.TotalUnique);
+  using var record=JsonDocument.Parse(output.ToString());
+  Assert.Equal("USER_RECORDED_APPLIED",
+   record.RootElement.GetProperty("StatusEvidence").GetString());
+ }
+
+ [Fact]
  public async Task ExistingFreelanceSnapshotIsOverlayedNotDuplicated()
  {
   var date=DateTimeOffset.UtcNow;
