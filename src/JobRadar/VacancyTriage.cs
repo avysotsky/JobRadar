@@ -37,7 +37,9 @@ public static class VacancyTriage
   @"\b(?:fully[- ]remote|remote[- ]first|remote[- ]only|remote\s+(?:position|role|work|job|available|within)|work\s+(?:fully\s+)?remotely|work\s+from\s+home|wfh)\b|(?<![a-z])remote(?![a-z])|віддален|дистанційн|дистанционн|удал[её]н|робот[а-яіїє]*\s+з\s+дому",Flags);
 
  private static readonly Regex ExplicitB2 = new(
-  @"(?:english|англійськ[а-яіїє]*|английск[а-я]*).{0,42}\b(?:b2|c1|c2|upper[ -]intermediate|advanced)\b|\b(?:b2|c1|c2|upper[ -]intermediate|advanced)\b.{0,42}(?:english|англійськ|английск)",Flags);
+  @"(?:english|англійськ[а-яіїє]*|английск[а-я]*)[^.;\n]{0,42}\b(?:b2|c1|c2|upper[ -]intermediate|advanced)\b"
+  + @"|\b(?:b2|c1|c2)\b[^.;\n]{0,28}(?:english|англійськ|английск)"
+  + @"|\b(?:upper[ -]intermediate|advanced)\b\s*(?:level\s+(?:of\s+)?)?(?:english|англійськ[а-яіїє]*|английск[а-я]*)",Flags);
  // Both "English Upper-Intermediate" and "Upper-Intermediate English" are
  // review signals; they may still be desirable/optional rather than mandatory.
  private static readonly Regex AmbiguousWorkMode = new(
