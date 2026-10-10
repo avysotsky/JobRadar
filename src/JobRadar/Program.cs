@@ -15,6 +15,29 @@ if(args.Contains("--smoke-robota"))return await RobotaLiveSmoke.RunAsync(options
 if(args.Contains("--smoke-djinni"))return await PublicSourceSmoke.RunAsync(new DjinniSource(),options,CancellationToken.None);
 if(args.Contains("--smoke-dou"))return await PublicSourceSmoke.RunAsync(new DouSource(),options,CancellationToken.None);
 if(args.Contains("--smoke-workua"))return await PublicSourceSmoke.RunAsync(new WorkUaSource("c#"),options,CancellationToken.None);
+if(args.Contains("--freelancer-once"))
+{
+ // Opt-in command is deliberately independent of PostgreSQL and the daily
+ // employment crawler. Writes transient JSONL to stdout only.
+ try
+ {
+  using var freelancerHttp=new HttpClient{Timeout=TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds,5,60))};
+  freelancerHttp.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
+  var report=await FreelancerProjects.ScanAsync(
+   freelancerHttp,Console.Out,
+   Environment.GetEnvironmentVariable("FLN_OAUTH_TOKEN"),
+   Environment.GetEnvironmentVariable("FLN_AUTOMATION_PERMISSION_GRANTED"),
+   options.FreelancerQueries,options.FreelancerPageSize,options.FreelancerMaxPagesPerQuery,
+   message=>Console.Error.WriteLine(message),CancellationToken.None);
+  Console.Error.WriteLine("Freelancer completed: "+JsonlOutput.Serialize(report));
+  return 0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Freelancer scan unavailable: "+e.Message);
+  return 4;
+ }
+}
 var cs=Environment.GetEnvironmentVariable("JOBRADAR_DB") ?? options.ConnectionString;
 var storage=new Storage(cs);
 try{await storage.Initialize(CancellationToken.None);}catch(Exception e){Console.Error.WriteLine("Database unavailable: "+e.Message);return 3;}
