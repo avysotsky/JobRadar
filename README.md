@@ -10,6 +10,14 @@
 
 Phase 8 adds conservative geographical and role-eligibility review gates, multilingual synthetic regression cases, and review-backlog metrics. See [Phase 8 design](docs/PHASE8_ELIGIBILITY.md). The Phase 8 branch passed the owner's local Release build and all **84/84 xUnit tests**, including PostgreSQL 16 integration tests against an isolated `jobradar_test` database on 2026-10-09. These results do not validate live provider coverage or deployment.
 
+## International remote boards — Phase 14 (manual preview)
+
+`--remote-boards-once` reads public [We Work Remotely RSS](https://weworkremotely.com/remote-job-rss-feed) (Backend and Programming) and the [Remotive Public API](https://remotive.com/remote-jobs/api) (Software Development, up to 250 records) **without login or PostgreSQL**. It emits attributed JSONL vacancy assessments and source-level PARTIAL/FAILED coverage logs. Results are *not yet* added to persistent JobRadar employment tables or scheduled scans.
+
+Important: Remotive requests should be limited to **no more than 4 per day**, and both providers require source attribution and original backlinks. WWR previews never become confident LikelyFit without verified full text; Remotive foreign-country/unspecified eligibility is routed to NeedsReview. Providers may return delayed or capped content, so no completeness guarantee is made.
+
+See [Phase 14 remote-board details](docs/PHASE14_REMOTE_BOARDS.md). The implementation currently has offline synthetic tests; no claims of confirmed live integration.
+
 ## Freelancer.com project scanner (Phase 12, strictly opt-in)
 
 Freelancer is a marketplace for **freelance projects**, separate from the DOU/Djinni/Robota salary-vacancy pipeline. The manual `--freelancer-once` command supports authenticated searches for C#/.NET, ASP.NET Core, trading bots, broker API integrations and webhooks. It ranks results and prints them to the console without storing them in PostgreSQL or changing the 265-vacancy audit.
