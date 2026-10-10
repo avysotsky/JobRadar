@@ -36,6 +36,9 @@ public static class RemoteBoards
     MaxCharactersInDocument=WwrResponseMaxBytes
    });
   var doc=XDocument.Load(reader);
+  if(doc.Root?.Name.LocalName!="rss" ||
+     !doc.Root.Elements().Any(x=>x.Name.LocalName=="channel"))
+   throw new InvalidDataException("Unsupported WWR RSS envelope");
   var items=doc.Descendants().Where(x=>x.Name.LocalName=="item").ToArray();
   var result=new List<RemoteBoardOpening>();int dropped=0,invalidDates=0;
   var observedAt=DateTimeOffset.UtcNow;
