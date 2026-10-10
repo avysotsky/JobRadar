@@ -35,6 +35,13 @@ public static class VacancyRoleRequirements
   + @"|\b(?:обов['’]язков[а-яіїє]*|обязательн[а-я]*)\b.{0,80}\b(?:react|angular|vue|frontend|фронтенд)\b",
   Flags);
 
+ // Scrub optional framework phrases before checking required technologies.
+ // Otherwise "React nice to have, not mandatory" looks like "React mandatory".
+ private static readonly Regex OptionalFrontend=new(
+  @"\b(?:react(?:\.js)?|angular|vue(?:\.js)?|front[\s-]?end|next\.?js)\b.{0,45}\b(?:nice\s+to\s+have|not\s+(?:mandatory|required)|optional)\b"
+  + @"|\b(?:optional|nice\s+to\s+have)\b.{0,30}\b(?:react(?:\.js)?|angular|vue(?:\.js)?|front[\s-]?end|next\.?js)\b",
+  Flags);
+
  private static readonly Regex MobileDesktopTitle=new(
   @"\b(?:maui|xamarin|mobile\s+(?:app|application|developer|engineer|specialist)|wpf|winforms|windows\s+forms)\b",
   Flags);
@@ -43,9 +50,10 @@ public static class VacancyRoleRequirements
  {
   var cleanTitle=Normalize(title);
   var cleanBody=Normalize(description);
+  var mandatoryEvidence=OptionalFrontend.Replace(cleanBody," ");
   return new VacancyRoleSignals(
    SeniorRole.IsMatch(cleanBody),
-   FullstackTitle.IsMatch(cleanTitle)||RequiredFrontend.IsMatch(cleanBody),
+   FullstackTitle.IsMatch(cleanTitle)||RequiredFrontend.IsMatch(mandatoryEvidence),
    MobileDesktopTitle.IsMatch(cleanTitle));
  }
 
