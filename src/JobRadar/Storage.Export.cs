@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Npgsql;
 
 namespace JobRadar;
@@ -47,7 +46,7 @@ LIMIT @limit
     StatusEvidence=reader.IsDBNull(11)?null:reader.GetString(11),
     Queries=JsonSerializer.Deserialize<string[]>(reader.GetString(12))??[]
    };
-   await writer.WriteLineAsync(JsonSerializer.Serialize(record).AsMemory(),ct);
+   await writer.WriteLineAsync(JsonlOutput.Serialize(record).AsMemory(),ct);
    count++;
   }
   return count;
