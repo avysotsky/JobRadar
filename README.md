@@ -189,6 +189,12 @@ The `--triage-jsonl` command generates **four** files together using the same or
 
 `--export-jsonl` continues to produce `jobs-*.jsonl` containing source data and provenance but now with readable Cyrillic. A compact export is a **view**, not a replacement for the full audit; all records remain in PostgreSQL. Both commands obey `ExportMaxRecords` (default 2000, hard upper bound 50000). `TotalStored` and `OmittedByLimit` still indicate truncation; a truncated export is never described as exhaustive. Neither command performs any external job-board requests. Existing `--triage-jsonl` paths and field names remain backward compatible, with the additional `CompactFile` result property.
 
+## Phase 11: conservative matching accuracy
+
+Rule-based triage now sends descriptions that explicitly hire for Senior roles, core FullStack/React/mobile specialization, and higher mandatory-looking English proficiency to `NeedsReview` instead of silently labeling them `LikelyFit`. `Mid-Senior` titles are mixed-seniority review cases, not Senior-only exclusions. `remote or hybrid` without fixed attendance is ambiguous/Unknown; explicit office attendance remains excluded. Changes use only local data and require no API calls.
+
+See [Phase 11 matching accuracy](docs/PHASE11_MATCHING_ACCURACY.md) for supported patterns and remaining limitations. The `Score` remains a heuristic ranking, not a hiring probability; unknown open status stays UNKNOWN. After local tests, compare `--triage-jsonl` outputs from the unchanged `jobradar_live` database with the previous 265-job audit.
+
 ## Middle .NET remote shortlist (Phase 7)
 
 The optional local rules-based triage produces **three JSONL files** from already stored vacancies. It performs zero job-board HTTP requests and makes no claims that an advertisement is currently active.
