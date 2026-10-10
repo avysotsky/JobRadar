@@ -15,6 +15,18 @@ if(args.Contains("--smoke-robota"))return await RobotaLiveSmoke.RunAsync(options
 if(args.Contains("--smoke-djinni"))return await PublicSourceSmoke.RunAsync(new DjinniSource(),options,CancellationToken.None);
 if(args.Contains("--smoke-dou"))return await PublicSourceSmoke.RunAsync(new DouSource(),options,CancellationToken.None);
 if(args.Contains("--smoke-workua"))return await PublicSourceSmoke.RunAsync(new WorkUaSource("c#"),options,CancellationToken.None);
+if(args.Contains("--remote-boards-once"))
+{
+ // Manual-only public RSS/API discovery. No PostgreSQL and no auto-scheduling.
+ using var handler=new HttpClientHandler {AllowAutoRedirect=false};
+ using var remoteClient=new HttpClient(handler)
+  {Timeout=TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds,5,60))};
+ remoteClient.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
+ var report=await RemoteBoards.ScanAsync(remoteClient,Console.Out,
+  message=>Console.Error.WriteLine(message),CancellationToken.None);
+ Console.Error.WriteLine("Remote boards completed: "+JsonlOutput.Serialize(report));
+ return report.Sources.Any(x=>x.Status=="FAILED"||x.DroppedRecords>0)?4:0;
+}
 if(args.Contains("--freelancer-once"))
 {
  // Opt-in command is deliberately independent of PostgreSQL and the daily
