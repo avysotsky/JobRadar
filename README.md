@@ -66,6 +66,25 @@ dotnet run --project src/JobRadar/JobRadar.csproj -- --smoke-workua
 
 The last GitHub-hosted Work.ua probe received HTTP 403; Actions are now disabled. The Work.ua adapter remains an optional diagnostic and is not a verified source.
 
+## Live progress in Windows PowerShell
+
+The normal `--once` crawl prints and flushes timestamped progress **while it is running**:
+source/query number, page fetch, listings returned, full descriptions saved, cached details, failures and final source status. Detail counts update after the first job and every five discovered jobs. The bounded pending-detail retry worker also reports per-item recovery counts.
+
+```powershell
+dotnet run --project src/JobRadar/JobRadar.csproj -c Release -- --once
+```
+
+Progress does not include individual vacancy URLs, descriptions or credentials. Query-level source totals may be missing or inaccurate; **no site-wide percentage or ETA is claimed**. The existing final JSON report is still written and returned after the crawl, including partial/failed coverage. GitHub Actions remain disabled.
+
+## Robota.ua full-text access pause (2026-10-09)
+
+An actual Windows crawl returned HTTP **403 Forbidden** for the Robota.ua company published-vacancies detail endpoint. The search/index endpoint succeeded, but full-text requests failed for every one of the 85 unique Robota vacancies. This is an **access failure, not proof of a closed vacancy**.
+
+The packaged `appsettings.json` now uses `"EnabledRobotaDetails": false`. Robota search queries **remain enabled** and continue storing IDs, URLs, titles, company names, available search previews and query provenance; reports remain `PARTIAL`. The collector and pending-detail retry worker **do not call the refused detail endpoint** while this flag is false, including after restart. The `--pending-status` command still includes unresolved Robota jobs, and pre-existing `fetch_errors` are preserved for audit.
+
+Only set `EnabledRobotaDetails` to `true` after confirming authorized provider access to that endpoint or a documented provider-approved replacement. Do not bypass 403, forge credentials, or interpret a preview as the complete job description. You can contact the official provider support/partnership channels to clarify access. Public search coverage and full description coverage are separate metrics.
+
 ## Full-text recovery and coverage audit
 
 A job discovered today but absent from tomorrow's RSS remains in PostgreSQL. The retry worker selects jobs lacking full text, independent of current source results. It uses bounded retries (default: 20 jobs per run, minimum 6 hours between attempts, maximum 5 attempts per job). Only enabled, supported sources are retried; **Jooble previews are not treated as complete vacancy descriptions and are excluded**.

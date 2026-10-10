@@ -3,6 +3,12 @@ using System.Text.Json;
 var configPath=Path.Combine(AppContext.BaseDirectory,"appsettings.json");
 if(!File.Exists(configPath)){Console.Error.WriteLine($"Missing configuration: {configPath}");return 2;}
 var options=JsonSerializer.Deserialize<RadarOptions>(await File.ReadAllTextAsync(configPath),new JsonSerializerOptions{PropertyNameCaseInsensitive=true}) ?? new RadarOptions();
+// Flush each progress event so a long-running --once scan is observable in PowerShell.
+void ShowProgress(string message)
+{
+ Console.WriteLine($"[{DateTimeOffset.Now:HH:mm:ss}] {message}");
+ Console.Out.Flush();
+}
 if(args.Contains("--smoke-feed-variants"))return await FeedVariantSmoke.RunAsync(options,CancellationToken.None);
 if(args.Contains("--smoke-robota-pages"))return await RobotaPagingSmoke.RunAsync(options,CancellationToken.None);
 if(args.Contains("--smoke-robota"))return await RobotaLiveSmoke.RunAsync(options,CancellationToken.None);
@@ -48,7 +54,7 @@ if(args.Contains("--retry-failed"))
 {
  using var client=new HttpClient{Timeout=TimeSpan.FromSeconds(options.TimeoutSeconds)};
  client.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
- var retry=new PendingRetry(new HttpFetcher(client,options.DelayMilliseconds),storage,options);
+ var retry=new PendingRetry(new HttpFetcher(client,options.DelayMilliseconds),storage,options,ShowProgress);
  var result=await retry.RunAsync(CancellationToken.None);
  Console.WriteLine(PendingRetry.Render(result));
  return result.Failed==0?0:4;
@@ -60,12 +66,13 @@ http.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
 var sources=FeedVariants.Create(options).ToList();
 if(options.EnabledRobota)foreach(var term in options.RobotaQueries.Distinct(StringComparer.OrdinalIgnoreCase))sources.Add(new RobotaApiSource(term));
 if(options.EnabledWorkUa)foreach(var term in options.WorkUaQueries.Distinct(StringComparer.OrdinalIgnoreCase))sources.Add(new WorkUaSource(term));
-var crawler=new Crawler(new HttpFetcher(http,options.DelayMilliseconds),storage,options);
+var crawler=new Crawler(new HttpFetcher(http,options.DelayMilliseconds),storage,options,ShowProgress);
 var once=args.Contains("--once");
 async Task<int> Run(CancellationToken ct)
 {
  try
  {
+  ShowProgress($"Crawl START, configured queries={sources.Count}");
   var report=await crawler.RunAsync(sources,ct);
   Directory.CreateDirectory(options.OutputDirectory);
   var file=Path.Combine(options.OutputDirectory,$"crawl-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}.json");
@@ -76,10 +83,11 @@ async Task<int> Run(CancellationToken ct)
     s.Status=="FAILED" || s.Error!=null || s.DetailsFailed>0 || s.CoverageWarning!=null);
   if(options.RetryAfterCrawl)
   {
-   var retryReport=await new PendingRetry(new HttpFetcher(http,options.DelayMilliseconds),storage,options).RunAsync(ct);
+   var retryReport=await new PendingRetry(new HttpFetcher(http,options.DelayMilliseconds),storage,options,ShowProgress).RunAsync(ct);
    Console.WriteLine("Pending details: "+PendingRetry.Render(retryReport));
    if(retryReport.Failed>0)failures=true;
   }
+  ShowProgress($"Crawl FINISHED, sources={report.Sources.Count}, found={report.Sources.Sum(s=>s.ReferencesFound)}, full={report.Sources.Sum(s=>s.DetailsFetched)}, failed={report.Sources.Sum(s=>s.DetailsFailed)}");
   if(failures)Console.Error.WriteLine("JobRadar: scan had source errors or unresolved detail failures; consult report.");
   return failures?4:0;
  }
