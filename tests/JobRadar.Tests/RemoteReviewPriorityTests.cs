@@ -129,7 +129,7 @@ public sealed class RemoteReviewPriorityTests
  }
 
  [Fact]
- public void OfflineReviewUsesOnlyExistingFileAndExportsCompactShortlist()
+ public async Task OfflineReviewUsesOnlyExistingFileAndExportsCompactShortlist()
  {
   var path=Path.Combine(Path.GetTempPath(),"jobradar-review-"+Guid.NewGuid().ToString("N")+".jsonl");
   var rows=new[]
