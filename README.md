@@ -16,6 +16,16 @@ An independent manual scanner for authenticated [Freelancehunt API v2](https://a
 
 The scanner parses provider URLs, budgets, bid counts, skills and account restrictions; deduplicates projects and reports partial coverage/dropped records. It is not a job-board completeness guarantee and never bids. No live authenticated scan has been made. See [Phase 13 implementation and access instructions](docs/PHASE13_FREELANCEHUNT.md).
 
+## Phase 15B — manually tracked freelance projects and applications
+
+Local-only `--project-track-add`, `--project-track-event`, `--project-track-list`, and `--project-track-delete --confirm-delete` commands manage **your own project bookmarks and past application actions** for Freelancehunt and Freelancer.com. They never contact either provider and never place an application or bid.
+
+PostgreSQL stores a canonical project URL and optional *manually entered* label/budget, with append-only `Applied`, `Replied`, `Interview`, `Won`, `Rejected`, `Withdrawn`, `Closed` events. Duplicate `Applied` records are prevented in SQL, and dependent outcomes require an earlier `Applied` event. Deleting a bookmark also deletes its local event history. Provider API descriptions, client information and OAuth tokens are not imported.
+
+`--opportunities-preview` displays these manual bookmarks and overlays your self-reported application status on any matching previously authorized local JSONL snapshot, without double counting it or claiming verified availability.
+
+See [Phase 15B usage and retention boundaries](docs/PHASE15B_PROJECT_TRACKER.md).
+
 ## Phase 15A — Unified opportunity preview and employment discovery history
 
 `--opportunities-preview` produces a **single compact, read-only JSONL view** across stored employment and optional locally retained authorized project/remote-board snapshots. Use `--freelancehunt-file=PATH`, `--freelancer-file=PATH`, or `--remote-boards-file=PATH` to opt into offline imported JSONL. The command makes **no provider HTTP requests** and does not store imported third-party content in PostgreSQL.
