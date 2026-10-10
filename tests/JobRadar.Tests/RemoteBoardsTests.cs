@@ -24,6 +24,20 @@ public sealed class RemoteBoardsTests
  </channel></rss>
  """;
 
+ // Clean fixture for successful multi-source scans. The separate Rss fixture
+ // intentionally contains an unsafe URL to test dropped-record accounting.
+ private const string CleanRss="""
+ <?xml version="1.0" encoding="utf-8"?>
+ <rss version="2.0"><channel><title>We Work Remotely</title>
+  <item>
+   <title>Middle .NET Backend Engineer</title>
+   <link>https://weworkremotely.com/remote-jobs/example-middle-net</link>
+   <pubDate>Sat, 10 Oct 2026 07:00:00 GMT</pubDate>
+   <description><![CDATA[<p>Fully remote ASP.NET Core, Web API, PostgreSQL, EF Core.</p>]]></description>
+  </item>
+ </channel></rss>
+ """;
+
  private const string Remotive="""
  {
   "job-count":2,
@@ -145,7 +159,7 @@ public sealed class RemoteBoardsTests
    count++;
    if(req.RequestUri!.Host=="remotive.com")
     return Ok(Remotive,"application/json");
-   return Ok(Rss,"application/rss+xml");
+   return Ok(CleanRss,"application/rss+xml");
   }));
   using var output=new StringWriter();
   var report=await RemoteBoards.ScanAsync(http,output,null,CancellationToken.None);
@@ -155,8 +169,12 @@ public sealed class RemoteBoardsTests
   Assert.Equal("PARTIAL",report.CoverageStatus); // no exhaustive claim
   var lines=output.ToString().Split('\n',StringSplitOptions.RemoveEmptyEntries);
   Assert.Equal(3,lines.Length);
-  Assert.Contains(lines,l=>l.Contains("We Work Remotely"));
-  Assert.Contains(lines,l=>l.Contains("Remotive"));
+  var attributions=lines.Select(line=>{
+   using var document=JsonDocument.Parse(line);
+   return document.RootElement.GetProperty("Opening").GetProperty("Attribution").GetString();
+  }).ToArray();
+  Assert.Contains("We Work Remotely",attributions);
+  Assert.Contains("Remotive",attributions);
   using var row=JsonDocument.Parse(lines[0]);
   Assert.True(row.RootElement.TryGetProperty("Warnings",out _));
  }
@@ -167,12 +185,16 @@ public sealed class RemoteBoardsTests
   using var http=new HttpClient(new Handler(req=>
     req.RequestUri!.Host=="remotive.com"
      ? new HttpResponseMessage((HttpStatusCode)429)
-     : Ok(Rss,"application/rss+xml")));
+     : Ok(CleanRss,"application/rss+xml")));
   using var output=new StringWriter();
   var report=await RemoteBoards.ScanAsync(http,output,null,CancellationToken.None);
   Assert.Equal("FAILED_OR_DROPPED",report.CoverageStatus);
   Assert.Contains(report.Sources,s=>s.Source=="remotive"&&s.Status=="FAILED");
-  Assert.Contains(output.ToString(),"We Work Remotely");
+  var lines=output.ToString().Split('\n',StringSplitOptions.RemoveEmptyEntries);
+  var job=Assert.Single(lines);
+  using var doc=JsonDocument.Parse(job);
+  Assert.Equal("We Work Remotely",
+   doc.RootElement.GetProperty("Opening").GetProperty("Attribution").GetString());
  }
 
  private static HttpResponseMessage Ok(string body,string contentType)=>
