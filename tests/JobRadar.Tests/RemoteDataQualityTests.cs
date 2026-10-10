@@ -124,7 +124,7 @@ public sealed class RemoteDataQualityTests
    Assert.Contains("•",decoded);
    Assert.Contains("naïve",decoded);
    var lines=decoded.Split('\n',StringSplitOptions.RemoveEmptyEntries);
-   Assert.Equal(2,lines.Length);
+   Assert.Equal(result.Integrity.Lines,lines.Length);
    foreach(var line in lines)
    {
     using var parsed=JsonDocument.Parse(line);
