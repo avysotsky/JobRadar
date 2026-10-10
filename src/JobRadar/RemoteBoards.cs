@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Xml.Linq;
 using AngleSharp.Html.Parser;
 
@@ -29,7 +30,7 @@ public static class RemoteBoards
    if(title.Length<3){dropped++;continue;}
    DateTimeOffset? published=null;
    if(DateTimeOffset.TryParse(Element(item,"pubDate"),CultureInfo.InvariantCulture,
-       DateTimeStyles.None,out var date))published=date;
+       DateTimeStyles.AssumeUniversal|DateTimeStyles.AdjustToUniversal,out var date))published=date;
    var excerpt=Plain(Element(item,"description"),950);
    result.Add(new RemoteBoardOpening(source,link!,title,null,excerpt,
     published,null,null,null,false,"We Work Remotely"));
@@ -56,12 +57,15 @@ public static class RemoteBoards
    DateTimeOffset? published=null;
    if(DateTimeOffset.TryParse(String(item,"publication_date"),CultureInfo.InvariantCulture,
      DateTimeStyles.None,out var date))published=date;
-   // Remotive provides full HTML, but export only a bounded plain-text excerpt.
-   var description=Plain(String(item,"description"),2400);
+   // Rank against the COMPLETE received description; export only a bounded
+   // excerpt. A late B2/onsite restriction must never be lost to truncation.
+   var fullDescription=Plain(String(item,"description"),int.MaxValue);
+   var excerpt=fullDescription.Length>2400?fullDescription[..2400]+"…":fullDescription;
    result.Add(new RemoteBoardOpening("remotive",link!,title.Trim(),
-    String(item,"company_name"),description,published,
+    String(item,"company_name"),excerpt,published,
     String(item,"candidate_required_location"),String(item,"job_type"),
-    String(item,"salary"),true,"Remotive"));
+    String(item,"salary"),fullDescription.Length>0,"Remotive")
+    {FullDescription=fullDescription});
   }
   return new RemoteBoardPage(result,raw,dropped);
  }
@@ -70,7 +74,7 @@ public static class RemoteBoards
  {
   // Board metadata indicates remote work but NEVER establishes eligibility
   // to work remotely from Ukraine without checking the location requirement.
-  var body="Remote work. "+item.Excerpt;
+  var body="Remote work. "+(item.FullDescription??item.Excerpt);
   var snapshot=new VacancySnapshot(item.Source,item.Url,item.Title,item.Company,
    item.HasFullText?null:body,item.HasFullText?body:"",
    item.HasFullText,null,item.PublishedAt,DateTimeOffset.UtcNow,
@@ -81,11 +85,14 @@ public static class RemoteBoards
   if(item.Source=="remotive")
   {
    var location=item.CandidateLocation?.Trim();
+   // Never treat 'Worldwide except Ukraine' or 'Ukraine not eligible' as
+   // approval merely because a country name appears in the field.
    if(string.IsNullOrWhiteSpace(location)||
       !(location.Equals("Worldwide",StringComparison.OrdinalIgnoreCase)||
         location.Equals("Anywhere",StringComparison.OrdinalIgnoreCase)||
         location.Equals("Global",StringComparison.OrdinalIgnoreCase)||
-        location.Contains("Ukraine",StringComparison.OrdinalIgnoreCase)))
+        location.Equals("Ukraine",StringComparison.OrdinalIgnoreCase)||
+        location.Equals("Ukraine only",StringComparison.OrdinalIgnoreCase)))
    {
     warnings.Add("Remote eligibility from Ukraine is unverified; provider location: "+
        (string.IsNullOrWhiteSpace(location)?"unspecified":location));
@@ -187,7 +194,13 @@ public static class RemoteBoards
 public sealed record RemoteBoardOpening(
  string Source,string Url,string Title,string? Company,string Excerpt,
  DateTimeOffset? PublishedAt,string? CandidateLocation,string? JobType,
- string? Salary,bool HasFullText,string Attribution);
+ string? Salary,bool HasFullText,string Attribution)
+{
+ // Full received text is used only in-process for ranking, never serialized
+ // to the compact JSONL output or persisted.
+ [JsonIgnore]
+ public string? FullDescription {get;init;}
+}
 
 public sealed record RemoteBoardCandidate(
  RemoteBoardOpening Opening,FitBucket Bucket,int Score,
