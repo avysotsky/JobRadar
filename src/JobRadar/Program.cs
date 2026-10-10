@@ -79,6 +79,8 @@ if(args.Contains("--freelancer-once"))
 var cs=Environment.GetEnvironmentVariable("JOBRADAR_DB") ?? options.ConnectionString;
 var storage=new Storage(cs);
 try{await storage.Initialize(CancellationToken.None);}catch(Exception e){Console.Error.WriteLine("Database unavailable: "+e.Message);return 3;}
+if(args.Any(x=>x.StartsWith("--project-track-",StringComparison.OrdinalIgnoreCase)))
+ return await ProjectTrackerCli.RunAsync(storage,args,Console.Out,Console.Error,CancellationToken.None);
 if(args.Contains("--opportunities-preview"))
 {
  // Reconcile stored employment with operator-selected local, previously
@@ -112,8 +114,9 @@ if(args.Contains("--opportunities-preview"))
   long stored=await storage.CountVacanciesForTriageAsync(CancellationToken.None);
   var histories=await storage.ReadDiscoveryHistoriesAsync(CancellationToken.None);
   var coverage=await storage.ReadLatestCoverageAsync(20,CancellationToken.None);
+  var tracked=await storage.ReadTrackedProjectsAsync(CancellationToken.None);
   var result=await OpportunityPreview.WriteAsync(
-   jobs,histories,coverage,readers,Console.Out,CancellationToken.None);
+   jobs,histories,coverage,readers,Console.Out,CancellationToken.None,tracked);
   Console.Error.WriteLine("Opportunities preview: "+JsonlOutput.Serialize(new
    {Result=result,TotalStoredEmployment=stored,EmploymentOmittedByLimit=Math.Max(0L,stored-jobs.Count)}));
   // Exit nonzero when export is truncated or any imported records failed to
