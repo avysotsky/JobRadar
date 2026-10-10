@@ -154,6 +154,44 @@ public sealed class UpworkProjectsTests
  }
 
  [Fact]
+ public async Task UnifiedPreviewRejectsUpworkRecordCountAboveMaximum()
+ {
+  // In-process imports may not rely on the Program.cs FileInfo guard.
+  var file=new Dictionary<OpportunityInputKind,TextReader>
+  {
+   [OpportunityInputKind.Upwork]=new StringReader(
+    string.Concat(Enumerable.Repeat(Row()+"\n",UpworkProjects.MaxRows+1)))
+  };
+  using var output=new StringWriter();
+  await Assert.ThrowsAsync<InvalidDataException>(()=>
+   OpportunityPreview.WriteAsync([],
+    new Dictionary<(string,string),JobDiscoveryHistory>(),
+    [],file,output,CancellationToken.None));
+ }
+
+ [Fact]
+ public void RealConnectorSnapshotShapeWithoutAppliedFieldIsUnverified()
+ {
+  var json=System.Text.Json.JsonSerializer.Serialize(new
+  {
+   url=JobUrl,
+   title="Two-Way Auto Sync: ASP.NET Core MVC Sales Portal ↔ Microsoft Dynamics 365 CRM",
+   description_snippet="ASP.NET Core MVC ↔ CRM API integration",
+   skills=new[]{"ASP.NET MVC","C#","API Integration"},
+   job_type="fixed",budget="50.00",experience_level="intermediate",
+   published_date="2026-10-10T16:31:47.175Z",
+   captured_at=DateTimeOffset.UtcNow,proposals_tier="20 to 50",
+   client_country="United States"
+  });
+  Assert.True(UpworkProjects.TryAssess(json,DateTimeOffset.UtcNow,out var candidate));
+  Assert.NotNull(candidate);
+  Assert.Null(candidate.Applied);
+  Assert.Equal("upwork",candidate.Source);
+  Assert.Equal(JobUrl,candidate.Url);
+  Assert.Contains(candidate.Warnings,x=>x.Contains("Connects"));
+ }
+
+ [Fact]
  public async Task ReviewFileFailsClosedForUnboundedInputs()
  {
   var path=Path.Combine(Path.GetTempPath(),"jobradar-upwork-"+Guid.NewGuid()+".jsonl");
