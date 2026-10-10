@@ -27,7 +27,7 @@ public sealed record OpportunityPreviewSummary(
  int FreelancePriority,int FreelanceReview,int FreelanceLowMatch,
  IReadOnlyList<OpportunityInputCoverage> Inputs,
  IReadOnlyList<StoredSourceCoverage> RecordedCrawlCoverage,
- string HistoryNote,string CoverageNote);
+ string HistoryNote,string CoverageNote,int ManuallyTrackedProjects);
 
 public static class OpportunityPreview
 {
@@ -36,7 +36,8 @@ public static class OpportunityPreview
   IReadOnlyDictionary<(string Source,string Url),JobDiscoveryHistory> histories,
   IReadOnlyList<StoredSourceCoverage> crawlCoverage,
   IReadOnlyDictionary<OpportunityInputKind,TextReader> inputs,
-  TextWriter output,CancellationToken ct)
+  TextWriter output,CancellationToken ct,
+  IReadOnlyList<TrackedProject>? manuallyTracked=null)
  {
   var seen=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
   var items=new List<UnifiedOpportunity>();
@@ -90,6 +91,44 @@ public static class OpportunityPreview
     rejected>0?"INPUT_ERRORS":"SNAPSHOT_ONLY_UNVERIFIED_COVERAGE"));
   }
 
+  // Overlay locally recorded application decisions on provider snapshots,
+  // or include the user's own bookmark when no snapshot was supplied.
+  foreach(var tracked in manuallyTracked??[])
+  {
+   ct.ThrowIfCancellationRequested();
+   if(!Key(OpportunityKind.FreelanceProject,tracked.Url,out var trackingKey))
+    continue;
+   var index=items.FindIndex(x=>x.Kind==OpportunityKind.FreelanceProject &&
+    Key(x.Kind,x.Url,out var currentKey) &&
+    string.Equals(currentKey,trackingKey,StringComparison.OrdinalIgnoreCase));
+   var evidence="USER_RECORDED_"+tracked.CurrentStatus.ToUpperInvariant();
+   if(index>=0)
+   {
+    var previous=items[index];
+    items[index]=previous with
+    {
+     FirstObservedAt=tracked.CreatedAt,
+     LastSeenAt=tracked.UpdatedAt,
+     StatusEvidence=evidence,
+     BudgetMinimum=previous.BudgetMinimum??tracked.OwnBudget,
+     BudgetMaximum=previous.BudgetMaximum??tracked.OwnBudget,
+     Currency=previous.Currency??tracked.OwnCurrency,
+     Warnings=previous.Warnings.Concat(
+      ["User-reported application status; not verified by provider"]).ToArray()
+    };
+   }
+   else if(seen.Add(trackingKey!))
+   {
+    items.Add(new UnifiedOpportunity(
+     OpportunityKind.FreelanceProject,tracked.Provider,tracked.Url,
+     tracked.Label??"Bookmarked project (manual reference)",
+     null,"Review",0,tracked.OwnCurrency,tracked.OwnBudget,tracked.OwnBudget,
+     null,tracked.CreatedAt,tracked.UpdatedAt,null,
+     tracked.Provider,evidence,[],
+     ["Manual bookmark only: suitability and open status not verified"]));
+   }
+  }
+
   foreach(var item in items.OrderBy(x=>x.Kind)
      .ThenByDescending(x=>x.Score).ThenBy(x=>x.Source,StringComparer.OrdinalIgnoreCase)
      .ThenBy(x=>x.Url,StringComparer.OrdinalIgnoreCase))
@@ -110,7 +149,8 @@ public static class OpportunityPreview
    items.Count(x=>x.Kind==OpportunityKind.FreelanceProject&&x.Bucket=="LowMatch"),
    inputCoverage,crawlCoverage,
    "Individual job discoveries are tracked only since Phase 15; null means unknown, not zero.",
-   "Feeds, local JSONL exports, and recent stored crawl reports do NOT guarantee total coverage or an open position.");
+   "Feeds, local JSONL exports, and recent stored crawl reports do NOT guarantee total coverage or an open position.",
+   manuallyTracked?.Count??0);
  }
 
  private static bool TryParse(OpportunityInputKind kind,string json,out UnifiedOpportunity? item)
