@@ -15,7 +15,12 @@ public sealed record UnifiedOpportunity(
  string Bucket,int Score,string? Currency,decimal? BudgetMinimum,decimal? BudgetMaximum,
  DateTimeOffset? PublishedAt,DateTimeOffset? FirstObservedAt,DateTimeOffset? LastSeenAt,
  long? RecordedDiscoveries,string Attribution,string StatusEvidence,
- IReadOnlyList<string> Reasons,IReadOnlyList<string> Warnings);
+ IReadOnlyList<string> Reasons,IReadOnlyList<string> Warnings)
+{
+ // Set for remote-board imports only; independent of employee/freelance
+ // score or provider-confirmed geographic eligibility.
+ public string? RemoteReviewPriority {get;init;}
+}
 
 public sealed record OpportunityInputCoverage(
  string InputKind,int LinesRead,int Accepted,int Rejected,int Duplicates,
@@ -207,11 +212,15 @@ public static class OpportunityPreview
       bucket=FitBucket.NeedsReview;
       warnings.Add("Original full description unavailable in compact snapshot; confidence downgraded");
      }
+     var tier=value.ReviewPriority==RemoteReviewPriority.NotApplicable
+      ?RemoteReviewTriage.Assess(opening,bucket).Priority
+      :value.ReviewPriority;
      item=new UnifiedOpportunity(OpportunityKind.Employment,
       opening.Source,opening.Url,opening.Title,opening.Company,
       bucket.ToString(),value.Score,null,null,null,opening.PublishedAt,
       null,null,null,opening.Attribution,"OPEN_STATUS_UNVERIFIED",
-      value.Reasons,warnings);
+      value.Reasons,warnings)
+      {RemoteReviewPriority=tier.ToString()};
      return true;
     }
    }
