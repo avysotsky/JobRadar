@@ -128,6 +128,32 @@ public sealed class UpworkProjectsTests
  }
 
  [Fact]
+ public async Task UpworkRowsMergeWithEmploymentWithoutSavingProviderDescriptions()
+ {
+  var files=new Dictionary<OpportunityInputKind,TextReader>
+  {
+   [OpportunityInputKind.Upwork]=new StringReader(Row()+"\n")
+  };
+  using var output=new StringWriter();
+  var report=await OpportunityPreview.WriteAsync([],
+   new Dictionary<(string,string),JobDiscoveryHistory>(),
+   [],files,output,CancellationToken.None);
+  Assert.Equal(1,report.TotalUnique);
+  Assert.Equal(1,report.FreelanceProjects);
+  Assert.Equal(1,report.FreelancePriority);
+  Assert.Equal("SNAPSHOT_ONLY_UNVERIFIED_COVERAGE",report.Inputs[0].CoverageStatus);
+  var serialized=output.ToString();
+  Assert.DoesNotContain("ASP.NET Core webhook",serialized);
+  using var doc=JsonDocument.Parse(serialized);
+  var root=doc.RootElement;
+  Assert.Equal("upwork",root.GetProperty("Source").GetString());
+  Assert.Equal("FreelanceProject",root.GetProperty("Kind").GetString());
+  Assert.Equal("OPEN_STATUS_UNVERIFIED",
+    root.GetProperty("StatusEvidence").GetString());
+  Assert.Equal("500.00",root.GetProperty("BudgetLabel").GetString());
+ }
+
+ [Fact]
  public async Task ReviewFileFailsClosedForUnboundedInputs()
  {
   var path=Path.Combine(Path.GetTempPath(),"jobradar-upwork-"+Guid.NewGuid()+".jsonl");
