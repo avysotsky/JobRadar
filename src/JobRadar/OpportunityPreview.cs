@@ -250,6 +250,12 @@ public static class OpportunityPreview
   // Path case is preserved. Do not suppress query parameters because they
   // may identify distinct jobs on otherwise identical source paths.
   var builder=new UriBuilder(uri){Fragment=""};
+  // Normalize the optional www prefix on our two project providers, so a
+  // manually bookmarked source URL overlays a matching authorized snapshot.
+  if(builder.Host.Equals("www.freelancehunt.com",StringComparison.OrdinalIgnoreCase))
+   builder.Host="freelancehunt.com";
+  else if(builder.Host.Equals("www.freelancer.com",StringComparison.OrdinalIgnoreCase))
+   builder.Host="freelancer.com";
   var normalized=builder.Uri.AbsoluteUri;
   if(builder.Query.Length==0)normalized=normalized.TrimEnd('/');
   key=kind+"|"+normalized;
