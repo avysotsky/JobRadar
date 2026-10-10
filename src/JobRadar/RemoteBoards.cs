@@ -109,7 +109,9 @@ public static class RemoteBoards
    warnings.Add("WWR RSS excerpt is not provider-verified complete text or geographic eligibility");
    if(bucket==FitBucket.LikelyFit)bucket=FitBucket.NeedsReview;
   }
-  return new RemoteBoardCandidate(item,bucket,a.Score,a.Reasons,warnings);
+  var review=RemoteReviewTriage.Assess(item,bucket);
+  return new RemoteBoardCandidate(item,bucket,a.Score,a.Reasons,warnings)
+   {ReviewPriority=review.Priority,ReviewEvidence=review.Evidence};
  }
 
  public static async Task<RemoteBoardsReport> ScanAsync(
@@ -152,7 +154,8 @@ public static class RemoteBoards
    }
   }
   var evaluated=found.Values.Select(Assess).OrderBy(x=>x.Bucket)
-   .ThenByDescending(x=>x.Score).ThenByDescending(x=>x.Opening.PublishedAt).ToArray();
+   .ThenBy(x=>x.ReviewPriority).ThenByDescending(x=>x.Score)
+   .ThenByDescending(x=>x.Opening.PublishedAt).ToArray();
   foreach(var item in evaluated)
   {
    ct.ThrowIfCancellationRequested();
@@ -163,7 +166,8 @@ public static class RemoteBoards
    evaluated.Count(x=>x.Bucket==FitBucket.LikelyFit),
    evaluated.Count(x=>x.Bucket==FitBucket.NeedsReview),
    evaluated.Count(x=>x.Bucket==FitBucket.Excluded),
-   counts.Any(x=>x.Status=="FAILED"||x.DroppedRecords>0)?"FAILED_OR_DROPPED":"PARTIAL");
+   counts.Any(x=>x.Status=="FAILED"||x.DroppedRecords>0)?"FAILED_OR_DROPPED":"PARTIAL")
+   {ReviewBreakdown=RemoteReviewTriage.Summarize(evaluated)};
  }
 
  private static string? Element(XElement item,string name)=>
@@ -210,7 +214,13 @@ public sealed record RemoteBoardOpening(
 
 public sealed record RemoteBoardCandidate(
  RemoteBoardOpening Opening,FitBucket Bucket,int Score,
- IReadOnlyList<string> Reasons,IReadOnlyList<string> Warnings);
+ IReadOnlyList<string> Reasons,IReadOnlyList<string> Warnings)
+{
+ // Independent queue priority, NOT evidence that a job is open or that a
+ // candidate may legally work from Ukraine. Older JSONL lacks these fields.
+ public RemoteReviewPriority ReviewPriority {get;init;}=RemoteReviewPriority.NotApplicable;
+ public IReadOnlyList<string> ReviewEvidence {get;init;}=[];
+}
 
 public sealed record RemoteBoardPage(
  IReadOnlyList<RemoteBoardOpening> Items,int RawCount,int DroppedCount);
@@ -220,4 +230,7 @@ public sealed record RemoteBoardSourceStatus(
 
 public sealed record RemoteBoardsReport(
  IReadOnlyList<RemoteBoardSourceStatus> Sources,int UniqueJobs,
- int LikelyFit,int NeedsReview,int Excluded,string CoverageStatus);
+ int LikelyFit,int NeedsReview,int Excluded,string CoverageStatus)
+{
+ public RemoteReviewBreakdown ReviewBreakdown {get;init;}=new(0,0,0,0,0,0);
+}
