@@ -1,6 +1,4 @@
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace JobRadar;
 
@@ -9,15 +7,10 @@ public sealed record TriageExportResult(
  int LikelyFit,int NeedsReview,int Excluded,int Shortlisted,
  int HighScoreNeedsReview,int GeoRestrictedNeedsReview,
  int IncompleteTextNeedsReview,int UnverifiedOpenStatus,
- long TotalStored,long OmittedByLimit);
+ long TotalStored,long OmittedByLimit,string CompactFile);
 
 public static class TriageExport
 {
- private static readonly JsonSerializerOptions Json=new()
- {
-  Converters={new JsonStringEnumConverter()}
- };
-
  /// <summary>
  /// No candidates are discarded: audit contains everything, shortlist only
  /// strong text-supported matches, and uncertain cases go to human review.
@@ -38,15 +31,19 @@ public static class TriageExport
   string audit=Path.Combine(directory,$"triage-all-{stamp}.jsonl");
   string shortlist=Path.Combine(directory,$"triage-remote-likely-{stamp}.jsonl");
   string review=Path.Combine(directory,$"triage-review-{stamp}.jsonl");
+  string compact=Path.Combine(directory,$"triage-compact-{stamp}.jsonl");
   await using(var all=new StreamWriter(audit,false,new UTF8Encoding(false)))
   await using(var selected=new StreamWriter(shortlist,false,new UTF8Encoding(false)))
   await using(var needsReview=new StreamWriter(review,false,new UTF8Encoding(false)))
+  await using(var compactView=new StreamWriter(compact,false,new UTF8Encoding(false)))
   {
    foreach(var item in evaluated)
    {
     ct.ThrowIfCancellationRequested();
-    var json=JsonSerializer.Serialize(item,Json);
+    var json=JsonlOutput.Serialize(item);
     await all.WriteLineAsync(json.AsMemory(),ct);
+    var small=JsonlOutput.Serialize(JsonlOutput.Compact(item));
+    await compactView.WriteLineAsync(small.AsMemory(),ct);
     if(item.Bucket==FitBucket.LikelyFit)
      await selected.WriteLineAsync(json.AsMemory(),ct);
     else if(item.Bucket==FitBucket.NeedsReview)
@@ -63,6 +60,6 @@ public static class TriageExport
     pending.Count(x=>x.Score>=65),restricted,
     pending.Count(x=>!x.Vacancy.HasFullText),
     evaluated.Count(x=>x.Vacancy.IsOpen is null),
-    totalStored,Math.Max(0L,totalStored-evaluated.Length));
+    totalStored,Math.Max(0L,totalStored-evaluated.Length),compact);
  }
 }
