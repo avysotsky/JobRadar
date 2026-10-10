@@ -79,6 +79,57 @@ if(args.Contains("--freelancer-once"))
 var cs=Environment.GetEnvironmentVariable("JOBRADAR_DB") ?? options.ConnectionString;
 var storage=new Storage(cs);
 try{await storage.Initialize(CancellationToken.None);}catch(Exception e){Console.Error.WriteLine("Database unavailable: "+e.Message);return 3;}
+if(args.Contains("--opportunities-preview"))
+{
+ // Reconcile stored employment with operator-selected local, previously
+ // authorized JSONL snapshots. This command never contacts external boards
+ // and never persists third-party inputs back to PostgreSQL.
+ static string? OptionalPath(string[] argv,string name)
+ {
+  var prefix=name+"=";
+  var value=argv.FirstOrDefault(x=>x.StartsWith(prefix,StringComparison.OrdinalIgnoreCase));
+  return value is null?null:value[prefix.Length..];
+ }
+ var paths=new (OpportunityInputKind Kind,string? Path)[]
+ {
+  (OpportunityInputKind.Freelancehunt,OptionalPath(args,"--freelancehunt-file")),
+  (OpportunityInputKind.Freelancer,OptionalPath(args,"--freelancer-file")),
+  (OpportunityInputKind.RemoteBoards,OptionalPath(args,"--remote-boards-file"))
+ };
+ var readers=new Dictionary<OpportunityInputKind,TextReader>();
+ try
+ {
+  foreach(var (kind,path) in paths)
+  {
+   if(path is null)continue;
+   if(string.IsNullOrWhiteSpace(path)||!File.Exists(path))
+    throw new FileNotFoundException("Local JSONL snapshot not found: "+kind);
+   readers.Add(kind,new StreamReader(path,System.Text.Encoding.UTF8,
+    detectEncodingFromByteOrderMarks:true));
+  }
+  var jobs=await storage.ReadVacanciesForTriageAsync(
+   Math.Clamp(options.ExportMaxRecords,1,50000),CancellationToken.None);
+  long stored=await storage.CountVacanciesForTriageAsync(CancellationToken.None);
+  var histories=await storage.ReadDiscoveryHistoriesAsync(CancellationToken.None);
+  var coverage=await storage.ReadLatestCoverageAsync(20,CancellationToken.None);
+  var result=await OpportunityPreview.WriteAsync(
+   jobs,histories,coverage,readers,Console.Out,CancellationToken.None);
+  Console.Error.WriteLine("Opportunities preview: "+JsonlOutput.Serialize(new
+   {Result=result,TotalStoredEmployment=stored,EmploymentOmittedByLimit=Math.Max(0L,stored-jobs.Count)}));
+  // Exit nonzero when export is truncated or any imported records failed to
+  // parse. Import errors are visible in per-source coverage metrics.
+  return result.Inputs.Any(x=>x.Rejected>0)||stored>jobs.Count?4:0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Opportunities preview failed: "+e.Message);
+  return 4;
+ }
+ finally
+ {
+  foreach(var reader in readers.Values)reader.Dispose();
+ }
+}
 if(args.Contains("--export-jsonl"))
 {
  var output=Path.GetFullPath(options.OutputDirectory);
