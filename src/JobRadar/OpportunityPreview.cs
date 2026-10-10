@@ -43,17 +43,22 @@ public static class OpportunityPreview
   foreach(var vacancy in employment)
   {
    ct.ThrowIfCancellationRequested();
-   if(!Key(OpportunityKind.Employment,vacancy.Url,out var key)||!seen.Add(key!))
-    continue; // Existing jobs use (source,url); their URLs normally unique.
+   // Never discard a persisted vacancy for a malformed or legacy URL.
+   // Its identity falls back to the original (source,url) primary key.
+   var validUrl=Key(OpportunityKind.Employment,vacancy.Url,out var key);
+   key??=OpportunityKind.Employment+"|"+vacancy.Source+"|"+vacancy.Url;
+   if(!seen.Add(key))continue;
    histories.TryGetValue((vacancy.Source,vacancy.Url),out var observation);
    var assessment=VacancyTriage.Assess(vacancy);
+   var warnings=assessment.Warnings.ToList();
+   if(!validUrl)warnings.Add("Saved source URL is non-HTTPS or malformed; verify manually");
    items.Add(new UnifiedOpportunity(
     OpportunityKind.Employment,vacancy.Source,vacancy.Url,vacancy.Title,
     vacancy.Company,assessment.Bucket.ToString(),assessment.Score,
     null,null,null,vacancy.PublishedAt,
     observation?.FirstObservedAt,vacancy.LastSeen,observation?.Observations,
     vacancy.Source,vacancy.StatusEvidence??"NOT_VERIFIED",
-    assessment.Reasons,assessment.Warnings));
+    assessment.Reasons,warnings));
   }
 
   var inputCoverage=new List<OpportunityInputCoverage>();
@@ -119,6 +124,7 @@ public static class OpportunityPreview
     {
      var value=JsonSerializer.Deserialize<FreelancehuntCandidate>(json,JsonlOutput.Options);
      if(value?.Project is not { } project||
+        project.Skills is null||project.Description is null||
         !ValidProviderUrl(project.Url,"freelancehunt.com","/project/")||
         string.IsNullOrWhiteSpace(project.Title))return false;
      // Recompute project priority from fields instead of trusting a file's
@@ -135,6 +141,7 @@ public static class OpportunityPreview
     {
      var value=JsonSerializer.Deserialize<FreelancerCandidate>(json,JsonlOutput.Options);
      if(value?.Project is not { } project||
+        project.Skills is null||project.Summary is null||
         !ValidProviderUrl(project.Url,"freelancer.com","/projects/")||
         string.IsNullOrWhiteSpace(project.Title))return false;
      var score=FreelancerProjects.Rank(project,value.Queries??[]);
@@ -149,6 +156,7 @@ public static class OpportunityPreview
     {
      var value=JsonSerializer.Deserialize<RemoteBoardCandidate>(json,JsonlOutput.Options);
      if(value?.Opening is not { } opening||
+        value.Reasons is null||value.Warnings is null||
         !ValidRemote(opening)||string.IsNullOrWhiteSpace(opening.Title))return false;
      var warnings=value.Warnings.ToList();
      var bucket=value.Bucket;
