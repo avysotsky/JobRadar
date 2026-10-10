@@ -157,7 +157,7 @@ public static class RemoteBoards
  public static Task<RemoteBoardsReport> ScanWwrAsync(
   HttpClient client,TextWriter output,Action<string>? progress,CancellationToken ct,
   bool includeFullstack=false)=>
-  ScanCoreAsync(client,output,progress,ct,wwrOnly:true,includeFullstack);
+  ScanCoreAsync(client,output,progress,ct,wwrOnly:true,includeFullstack:includeFullstack);
 
  private static async Task<RemoteBoardsReport> ScanCoreAsync(
   HttpClient client,TextWriter output,Action<string>? progress,CancellationToken ct,
