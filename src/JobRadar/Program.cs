@@ -1,5 +1,8 @@
 using JobRadar;
 using System.Text.Json;
+// Explicit UTF-8 for redirected stdout/stderr on Windows, independent of
+// legacy OEM code pages. For reproducible exports prefer direct-file mode.
+Console.OutputEncoding=new System.Text.UTF8Encoding(false,true);
 var configPath=Path.Combine(AppContext.BaseDirectory,"appsettings.json");
 if(!File.Exists(configPath)){Console.Error.WriteLine($"Missing configuration: {configPath}");return 2;}
 var options=JsonSerializer.Deserialize<RadarOptions>(await File.ReadAllTextAsync(configPath),new JsonSerializerOptions{PropertyNameCaseInsensitive=true}) ?? new RadarOptions();
@@ -15,17 +18,57 @@ if(args.Contains("--smoke-robota"))return await RobotaLiveSmoke.RunAsync(options
 if(args.Contains("--smoke-djinni"))return await PublicSourceSmoke.RunAsync(new DjinniSource(),options,CancellationToken.None);
 if(args.Contains("--smoke-dou"))return await PublicSourceSmoke.RunAsync(new DouSource(),options,CancellationToken.None);
 if(args.Contains("--smoke-workua"))return await PublicSourceSmoke.RunAsync(new WorkUaSource("c#"),options,CancellationToken.None);
+var remoteAuditArg=args.FirstOrDefault(x=>
+ x.StartsWith("--remote-boards-audit=",StringComparison.OrdinalIgnoreCase));
+if(remoteAuditArg is not null)
+{
+ try
+ {
+  var path=remoteAuditArg["--remote-boards-audit=".Length..];
+  var audit=await RemoteJsonlIntegrity.CheckAsync(path,CancellationToken.None);
+  Console.WriteLine(JsonlOutput.Serialize(audit));
+  return audit.Valid?0:4;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Remote JSONL audit failed: "+e.Message);
+  return 4;
+ }
+}
 if(args.Contains("--remote-boards-once"))
 {
  // Manual-only public RSS/API discovery. No PostgreSQL and no auto-scheduling.
- using var handler=new HttpClientHandler {AllowAutoRedirect=false};
- using var remoteClient=new HttpClient(handler)
-  {Timeout=TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds,5,60))};
- remoteClient.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
- var report=await RemoteBoards.ScanAsync(remoteClient,Console.Out,
-  message=>Console.Error.WriteLine(message),CancellationToken.None);
- Console.Error.WriteLine("Remote boards completed: "+JsonlOutput.Serialize(report));
- return report.Sources.Any(x=>x.Status=="FAILED"||x.DroppedRecords>0)?4:0;
+ try
+ {
+  using var handler=new HttpClientHandler {AllowAutoRedirect=false};
+  using var remoteClient=new HttpClient(handler)
+   {Timeout=TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds,5,60))};
+  remoteClient.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
+  var outputArg=args.FirstOrDefault(x=>
+   x.StartsWith("--remote-boards-output=",StringComparison.OrdinalIgnoreCase));
+  RemoteBoardsReport report;
+  if(outputArg is null)
+  {
+   report=await RemoteBoards.ScanAsync(remoteClient,Console.Out,
+    message=>Console.Error.WriteLine(message),CancellationToken.None);
+  }
+  else
+  {
+   var path=outputArg["--remote-boards-output=".Length..];
+   var result=await RemoteBoardFileExport.WriteAsync(remoteClient,path,
+    message=>Console.Error.WriteLine(message),CancellationToken.None);
+   report=result.Report;
+   Console.Error.WriteLine("Verified UTF-8 JSONL: "+JsonlOutput.Serialize(
+    new {result.Path,result.Integrity}));
+  }
+  Console.Error.WriteLine("Remote boards completed: "+JsonlOutput.Serialize(report));
+  return report.Sources.Any(x=>x.Status=="FAILED"||x.DroppedRecords>0)?4:0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Remote boards scan/export failed: "+e.Message);
+  return 4;
+ }
 }
 if(args.Contains("--freelancehunt-once"))
 {
@@ -106,7 +149,16 @@ if(args.Contains("--opportunities-preview"))
    if(path is null)continue;
    if(string.IsNullOrWhiteSpace(path)||!File.Exists(path))
     throw new FileNotFoundException("Local JSONL snapshot not found: "+kind);
-   readers.Add(kind,new StreamReader(path,System.Text.Encoding.UTF8,
+   // Fail closed on damaged UTF-8 rather than importing silently
+   // substituted Unicode replacement characters.
+   if(kind==OpportunityInputKind.RemoteBoards)
+   {
+    var integrity=await RemoteJsonlIntegrity.CheckAsync(path,CancellationToken.None);
+    if(!integrity.Valid)
+     throw new InvalidDataException("Remote JSONL failed strict UTF-8/JSON integrity: "+
+      JsonlOutput.Serialize(integrity));
+   }
+   readers.Add(kind,new StreamReader(path,new System.Text.UTF8Encoding(false,true),
     detectEncodingFromByteOrderMarks:true));
   }
   var jobs=await storage.ReadVacanciesForTriageAsync(
