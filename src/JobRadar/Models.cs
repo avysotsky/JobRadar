@@ -29,6 +29,7 @@ public sealed class RadarOptions
  // Full-text API returned HTTP 403 in the owner's live crawl. Keep discovery available.
  public bool EnabledRobotaDetails { get; set; } = true;
  public string[] RobotaQueries { get; set; } = [".net", "c-sharp", "backend"];
+ public bool EnabledWwr { get; set; } = false; // Consent/retention gate; routine scan NEVER schedules WWR
  public bool EnabledWorkUa { get; set; } = false; // Requires source permission/live verification
  public string[] WorkUaQueries { get; set; } = ["c#", ".net", "backend"];
  // Freelancer.com requires provider permission and an OAuth token. Never scheduled.
