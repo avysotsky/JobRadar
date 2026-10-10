@@ -16,6 +16,16 @@ An independent manual scanner for authenticated [Freelancehunt API v2](https://a
 
 The scanner parses provider URLs, budgets, bid counts, skills and account restrictions; deduplicates projects and reports partial coverage/dropped records. It is not a job-board completeness guarantee and never bids. No live authenticated scan has been made. See [Phase 13 implementation and access instructions](docs/PHASE13_FREELANCEHUNT.md).
 
+## Phase 16 — verified UTF-8/JSONL export and full received RSS classification
+
+The first live WWR/Remotive run found 43 unique postings but the Windows-redirection-saved JSONL was damaged (three invalid UTF-8 lines and three syntactically invalid JSON lines, overlapping on line 41). Run `--remote-boards-audit=PATH.jsonl` offline to identify malformed input and affected line numbers.
+
+Use **`--remote-boards-once --remote-boards-output=PATH.jsonl`** for subsequent scans. This writes UTF-8 directly in the .NET process and verifies the complete JSONL file before publication, without overwriting older reports or depending on the terminal code page. Original corrupted exports are not silently repaired.
+
+WWR feeds are now evaluated against **all text received from RSS**, not just the first 950 characters shown in JSONL. An RSS excerpt is still **not proof of full posting content or eligibility to work from Ukraine**. Provider/API and retention constraints are unchanged; no additional scheduled scans or job-board requests are introduced by this feature.
+
+See [Phase 16 live evidence, audit commands, and local validation](docs/PHASE16_REMOTE_DATA_QUALITY.md).
+
 ## Phase 15B — manually tracked freelance projects and applications
 
 Local-only `--project-track-add`, `--project-track-event`, `--project-track-list`, and `--project-track-delete --confirm-delete` commands manage **your own project bookmarks and past application actions** for Freelancehunt and Freelancer.com. They never contact either provider and never place an application or bid.
