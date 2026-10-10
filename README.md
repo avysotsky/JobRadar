@@ -10,6 +10,12 @@
 
 Phase 8 adds conservative geographical and role-eligibility review gates, multilingual synthetic regression cases, and review-backlog metrics. See [Phase 8 design](docs/PHASE8_ELIGIBILITY.md). The Phase 8 branch passed the owner's local Release build and all **84/84 xUnit tests**, including PostgreSQL 16 integration tests against an isolated `jobradar_test` database on 2026-10-09. These results do not validate live provider coverage or deployment.
 
+## Phase 18 — Upwork first + immediate controlled operations
+
+The personal Upwork account can be searched through the **official Upwork app connected to ChatGPT**. Since Upwork stopped RSS in August 2024 and local OAuth/API permission is separate, **this Windows program does not scrape Upwork or automatically poll it**. Import a short-lived, privately collected Upwork job snapshot with `--upwork-preview=reports/upwork-snapshot.jsonl` (no PostgreSQL/network calls); `--opportunities-preview --upwork-file=...` adds scored Upwork projects to the already supported unified employment + freelance view. Scores use the existing C#/.NET, API, trading and automation freelance scoring; data older than 24 hours is rejected. Raw descriptions are not emitted or persisted, and neither bids nor Connects are spent.
+
+After local testing, run `scripts/operate-now.ps1` on your Windows host with private `JOBRADAR_DB`: it produces a fresh triage snapshot and pending-status diagnostics from existing employment DB, and can add a transient Upwork snapshot. Use `-RunCrawler` to trigger **one** current source crawl after ensuring that no separate collector is running. This is controlled first-day operation, not a permanent server or an implicit automatic schedule. GitHub Actions are OFF. [Upwork/operations runbook](docs/PHASE18_UPWORK_START_OPERATIONS.md).
+
 ## Freelancehunt projects — Phase 13
 
 An independent manual scanner for authenticated [Freelancehunt API v2](https://apidocs.freelancehunt.com/) `GET /v2/projects` discovery is available through `--freelancehunt-once`. It requires `FREELANCEHUNT_API_TOKEN` and writes a scored JSONL stream to the console only; never mixed with salary vacancies, `jobs` storage or the regular crawler. By default, it reads at most **two provider pages**; optional filter IDs must come from the provider's skills catalog.

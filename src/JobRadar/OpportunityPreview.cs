@@ -8,7 +8,7 @@ namespace JobRadar;
 /// No imported third-party descriptions or OAuth tokens are persisted.
 /// </summary>
 public enum OpportunityKind { Employment, FreelanceProject }
-public enum OpportunityInputKind { Freelancehunt, Freelancer, RemoteBoards }
+public enum OpportunityInputKind { Freelancehunt, Freelancer, RemoteBoards, Upwork }
 
 public sealed record UnifiedOpportunity(
  OpportunityKind Kind,string Source,string Url,string Title,string? Organization,
@@ -20,6 +20,9 @@ public sealed record UnifiedOpportunity(
  // Set for remote-board imports only; independent of employee/freelance
  // score or provider-confirmed geographic eligibility.
  public string? RemoteReviewPriority {get;init;}
+ // Hourly range and fixed-budget labels are not comparable scalar amounts.
+ // Preserve Upwork's stated text rather than inventing a USD numeric budget.
+ public string? BudgetLabel {get;init;}
 }
 
 public sealed record OpportunityInputCoverage(
@@ -78,9 +81,14 @@ public static class OpportunityPreview
     if(line is null)break;
     if(string.IsNullOrWhiteSpace(line))continue;
     total++;
+    // Upwork connector snapshots are short-lived and bounded. Do not let
+    // direct in-process imports bypass the 100-row/32k-char provider cap.
+    if(kind==OpportunityInputKind.Upwork && total>UpworkProjects.MaxRows)
+     throw new InvalidDataException("Upwork snapshot exceeds 100 record limit");
     // Manual exports only: cap a single untrusted JSONL record. Avoid logging
     // full payloads (they could contain customer details or credentials).
-    if(line.Length>128_000){rejected++;continue;}
+    if(line.Length>(kind==OpportunityInputKind.Upwork?32_000:128_000))
+    {rejected++;continue;}
     if(!TryParse(kind,line,out var item)||
        !Key(item!.Kind,item.Url,out var key))
     {
@@ -195,6 +203,19 @@ public static class OpportunityPreview
       project.Currency,project.BudgetMinimum,project.BudgetMaximum,null,
       null,null,null,"Freelancer.com","OPEN_STATUS_UNVERIFIED",
       score.Reasons,["OAuth and express provider permission required for live scans; export snapshot is unverified"]);
+     return true;
+    }
+    case OpportunityInputKind.Upwork:
+    {
+     // This file is a PRIVATE, <=24-hour connector snapshot. Recompute
+     // priority from received fields, never trust an imported score.
+     if(!UpworkProjects.TryAssess(json,DateTimeOffset.UtcNow,out var value) ||
+        value is null)return false;
+     item=new UnifiedOpportunity(OpportunityKind.FreelanceProject,
+      "upwork",value.Url,value.Title,null,value.Bucket,value.Score,
+      "USD",null,null,value.PublishedAt,null,null,null,
+      "Upwork","OPEN_STATUS_UNVERIFIED",value.Reasons,value.Warnings)
+      {BudgetLabel=value.BudgetLabel};
      return true;
     }
     case OpportunityInputKind.RemoteBoards:

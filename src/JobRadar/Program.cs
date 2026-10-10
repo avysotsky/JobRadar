@@ -18,6 +18,25 @@ if(args.Contains("--smoke-robota"))return await RobotaLiveSmoke.RunAsync(options
 if(args.Contains("--smoke-djinni"))return await PublicSourceSmoke.RunAsync(new DjinniSource(),options,CancellationToken.None);
 if(args.Contains("--smoke-dou"))return await PublicSourceSmoke.RunAsync(new DouSource(),options,CancellationToken.None);
 if(args.Contains("--smoke-workua"))return await PublicSourceSmoke.RunAsync(new WorkUaSource("c#"),options,CancellationToken.None);
+var upworkArg=args.FirstOrDefault(x=>
+ x.StartsWith("--upwork-preview=",StringComparison.OrdinalIgnoreCase));
+if(upworkArg is not null)
+{
+ // Manual local export from the authorized Upwork ChatGPT connector.
+ // No provider API access, PostgreSQL initialization or Connects spending.
+ try
+ {
+  var file=upworkArg["--upwork-preview=".Length..];
+  var report=await UpworkProjects.ReviewFileAsync(file,Console.Out,CancellationToken.None);
+  Console.Error.WriteLine("Upwork local preview: "+JsonlOutput.Serialize(report));
+  return report.Rejected==0?0:4;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Upwork local preview unavailable: "+e.Message);
+  return 4;
+ }
+}
 var remoteReviewArg=args.FirstOrDefault(x=>
  x.StartsWith("--remote-boards-review=",StringComparison.OrdinalIgnoreCase));
 if(remoteReviewArg is not null)
@@ -156,7 +175,8 @@ if(args.Contains("--opportunities-preview"))
  {
   (OpportunityInputKind.Freelancehunt,OptionalPath(args,"--freelancehunt-file")),
   (OpportunityInputKind.Freelancer,OptionalPath(args,"--freelancer-file")),
-  (OpportunityInputKind.RemoteBoards,OptionalPath(args,"--remote-boards-file"))
+  (OpportunityInputKind.RemoteBoards,OptionalPath(args,"--remote-boards-file")),
+  (OpportunityInputKind.Upwork,OptionalPath(args,"--upwork-file"))
  };
  var readers=new Dictionary<OpportunityInputKind,TextReader>();
  try
@@ -166,6 +186,15 @@ if(args.Contains("--opportunities-preview"))
    if(path is null)continue;
    if(string.IsNullOrWhiteSpace(path)||!File.Exists(path))
     throw new FileNotFoundException("Local JSONL snapshot not found: "+kind);
+   // A connected Upwork snapshot is private, temporary and separately
+   // permissioned. Enforce the same file limits in the unified import path.
+   if(kind==OpportunityInputKind.Upwork)
+   {
+    var info=new FileInfo(path);
+    if(info.Length>UpworkProjects.MaxSnapshotBytes ||
+       DateTime.UtcNow-info.LastWriteTimeUtc>UpworkProjects.MaxAge)
+     throw new InvalidDataException("Upwork snapshot too large or older than 24h");
+   }
    // Fail closed on damaged UTF-8 rather than importing silently
    // substituted Unicode replacement characters.
    if(kind==OpportunityInputKind.RemoteBoards)
