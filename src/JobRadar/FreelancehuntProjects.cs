@@ -150,11 +150,9 @@ public static class FreelancehuntProjects
    reasons.Add("Plus account requirement — verify eligibility before bidding");
    if(bucket=="Priority")bucket="Review";
   }
-  if(project.RemoteOnly==false)
-  {
-   reasons.Add("Remote availability not confirmed; check with client");
-   if(bucket=="Priority")bucket="Review";
-  }
+  // Freelancehunt 'is_remote_job' differentiates a remote job posting from
+  // an ordinary freelance project; false does NOT mean office attendance.
+  // Preserve the provider flag without using it as a negative eligibility gate.
   return new FreelancehuntCandidate(project,bucket,match.Score,reasons);
  }
 
