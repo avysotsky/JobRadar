@@ -14,10 +14,12 @@ public sealed class ExportTests
   var job=new JobRef(unique,"https://jobs.dou.ua/vacancies/523111/",
     "Middle Backend C#", "Example",DateTimeOffset.UtcNow,"preview only");
   await storage.SaveDiscovered(job,CancellationToken.None,"dou-rss-C#");
-  await storage.Save(new JobDetail(job,new string('X',145),null,DateTimeOffset.UtcNow),CancellationToken.None);
+  await storage.Save(new JobDetail(job,new string('Ж',145),null,DateTimeOffset.UtcNow),CancellationToken.None);
   using var sw=new StringWriter();
   var rows=await storage.ExportJobsJsonlAsync(sw,5000,CancellationToken.None);
   Assert.True(rows>=1);
+  Assert.Contains(new string('Ж',10),sw.ToString());
+  Assert.DoesNotContain("\\u0416",sw.ToString(),StringComparison.OrdinalIgnoreCase);
   var matching=sw.ToString().Split('\n',StringSplitOptions.RemoveEmptyEntries)
    .Select(line=>JsonDocument.Parse(line))
    .ToList();

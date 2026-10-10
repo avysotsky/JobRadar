@@ -162,6 +162,25 @@ dotnet run --project src/JobRadar/JobRadar.csproj -- --smoke-feed-variants
 
 The export is bounded at `ExportMaxRecords` (default 2,000) and may not include all historical records without changing that setting. It does not assert that vacancies are still active.
 
+## Readable UTF-8 and compact vacancy exports (Phase 10)
+
+**JSONL files use UTF-8 without BOM and write Cyrillic as readable text**, rather than spelling it out as `\\u043f\\u0440...`. JSON-required escaping for quotes, backslashes, tabs and newlines still applies. The relaxed JSON encoder is for **standalone files only**: do not place its output directly inside HTML or a `<script>` element without context-sensitive HTML escaping.
+
+```powershell
+# No HTTP calls: exports the already collected local database.
+dotnet run --project src/JobRadar/JobRadar.csproj -c Release -- --triage-jsonl
+dotnet run --project src/JobRadar/JobRadar.csproj -c Release -- --export-jsonl
+```
+
+The `--triage-jsonl` command generates **four** files together using the same ordered snapshot, and reports their exact paths in its JSON result:
+
+- `triage-all-*.jsonl`: full record, including long vacancy descriptions, source metadata, assessment, warnings and reasons; readable Cyrillic.
+- `triage-compact-*.jsonl`: compact 11-field flat assessment for **every** evaluated vacancy, including excluded and review-needed; Source, Url, Title, Company, Bucket, Score, WorkMode, HasFullText, IsOpen, Reasons, Warnings. No Description or Preview.
+- `triage-remote-likely-*.jsonl`: full descriptions for likely matches only.
+- `triage-review-*.jsonl`: full descriptions for human-review cases only.
+
+`--export-jsonl` continues to produce `jobs-*.jsonl` containing source data and provenance but now with readable Cyrillic. A compact export is a **view**, not a replacement for the full audit; all records remain in PostgreSQL. Both commands obey `ExportMaxRecords` (default 2000, hard upper bound 50000). `TotalStored` and `OmittedByLimit` still indicate truncation; a truncated export is never described as exhaustive. Neither command performs any external job-board requests. Existing `--triage-jsonl` paths and field names remain backward compatible, with the additional `CompactFile` result property.
+
 ## Middle .NET remote shortlist (Phase 7)
 
 The optional local rules-based triage produces **three JSONL files** from already stored vacancies. It performs zero job-board HTTP requests and makes no claims that an advertisement is currently active.
