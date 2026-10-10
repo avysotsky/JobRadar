@@ -31,9 +31,14 @@ public static class RemoteBoards
    DateTimeOffset? published=null;
    if(DateTimeOffset.TryParse(Element(item,"pubDate"),CultureInfo.InvariantCulture,
        DateTimeStyles.AssumeUniversal|DateTimeStyles.AdjustToUniversal,out var date))published=date;
-   var excerpt=Plain(Element(item,"description"),950);
+   // WWR RSS is not a verified complete vacancy, but may contain far more
+   // than the 950 characters we show in compact JSONL. Analyze everything
+   // received so late .NET, B2 and location restrictions are not missed.
+   var receivedText=Plain(Element(item,"description"),int.MaxValue);
+   var excerpt=receivedText.Length>950?receivedText[..950]+"…":receivedText;
    result.Add(new RemoteBoardOpening(source,link!,title,null,excerpt,
-    published,null,null,null,false,"We Work Remotely"));
+    published,null,null,null,false,"We Work Remotely")
+    {FullDescription=receivedText});
   }
   return new RemoteBoardPage(result,items.Length,dropped);
  }
@@ -196,8 +201,9 @@ public sealed record RemoteBoardOpening(
  DateTimeOffset? PublishedAt,string? CandidateLocation,string? JobType,
  string? Salary,bool HasFullText,string Attribution)
 {
- // Full received text is used only in-process for ranking, never serialized
- // to the compact JSONL output or persisted.
+ // Entire received RSS/API text is used only in-process for ranking, never
+ // serialized to compact JSONL or persisted. WWR RSS remains unverified as
+ // a complete vacancy even when the entire RSS description was analyzed.
  [JsonIgnore]
  public string? FullDescription {get;init;}
 }
