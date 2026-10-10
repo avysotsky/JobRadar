@@ -110,7 +110,7 @@ public sealed class FreelancerProjectsTests
   Assert.Equal(2,result.ApiCalls);
   Assert.Equal(2,result.Queries);
   Assert.Equal(2,result.UniqueProjects);
-  Assert.Single(result.Priority==1?new[]{1}:Array.Empty<int>());
+  Assert.Equal(1,result.Priority);
   var rows=output.ToString().Split('\n',StringSplitOptions.RemoveEmptyEntries);
   Assert.Equal(2,rows.Length);
   using var first=JsonDocument.Parse(rows[0]);
