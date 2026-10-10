@@ -21,7 +21,11 @@ if(args.Contains("--freelancer-once"))
  // employment crawler. Writes transient JSONL to stdout only.
  try
  {
-  using var freelancerHttp=new HttpClient{Timeout=TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds,5,60))};
+  // OAuth is carried in a custom header; redirects to third-party hosts
+  // must never forward that header.
+  using var freelancerHandler=new HttpClientHandler{AllowAutoRedirect=false};
+  using var freelancerHttp=new HttpClient(freelancerHandler)
+   {Timeout=TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds,5,60))};
   freelancerHttp.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
   var report=await FreelancerProjects.ScanAsync(
    freelancerHttp,Console.Out,
