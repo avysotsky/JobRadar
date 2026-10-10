@@ -36,6 +36,7 @@ try {
  $reportRoot = Join-Path (Get-Location) 'reports'
  New-Item -ItemType Directory -Force -Path $reportRoot | Out-Null
  Write-Host "JobRadar controlled run $stamp; no scheduler or Upwork API calls."
+ $partialCrawler = $false
 
  if ($RunCrawler) {
   Write-Host 'Crawling configured employment sources once. Stop any Docker/scheduled collector FIRST.'
@@ -44,6 +45,7 @@ try {
   Write-Host "JobRadar crawl exit code: $crawlCode"
   if ($crawlCode -eq 3) {throw 'Cannot initialize PostgreSQL. Stop.'}
   if ($crawlCode -ne 0) {
+   $partialCrawler = $true
    Write-Warning 'Partial crawl/source errors reported. Check crawl-*.json before interpreting coverage.'
   }
  }
@@ -69,7 +71,10 @@ try {
   & dotnet run --project $project -c Release -- --opportunities-preview "--upwork-file=$path"
   if ($LASTEXITCODE -ne 0) {throw 'Unified opportunity preview failed'}
  }
- Write-Host 'Controlled JobRadar operation completed. See reports/ for persisted employment triage exports.'
+ if ($partialCrawler) {
+  throw 'JobRadar reports generated but the provider crawl was PARTIAL/FAILED. See crawl-*.json.'
+ }
+ Write-Host 'Controlled JobRadar operation completed without reported crawl errors. See reports/ for persisted employment triage exports.'
 }
 finally {
  if ($acquired) {$mutex.ReleaseMutex()}
