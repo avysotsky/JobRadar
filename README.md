@@ -16,6 +16,16 @@ An independent manual scanner for authenticated [Freelancehunt API v2](https://a
 
 The scanner parses provider URLs, budgets, bid counts, skills and account restrictions; deduplicates projects and reports partial coverage/dropped records. It is not a job-board completeness guarantee and never bids. No live authenticated scan has been made. See [Phase 13 implementation and access instructions](docs/PHASE13_FREELANCEHUNT.md).
 
+## Phase 15A — Unified opportunity preview and employment discovery history
+
+`--opportunities-preview` produces a **single compact, read-only JSONL view** across stored employment and optional locally retained authorized project/remote-board snapshots. Use `--freelancehunt-file=PATH`, `--freelancer-file=PATH`, or `--remote-boards-file=PATH` to opt into offline imported JSONL. The command makes **no provider HTTP requests** and does not store imported third-party content in PostgreSQL.
+
+The combined result retains distinct `Employment` / `FreelanceProject` types, corresponding classification buckets, canonical-URL deduplication, currency/budget where available, provenance, and explicit per-input dropped/duplicate/partial-source metrics. Remotive high-confidence classifications are downgraded for review on import because compact snapshots omit full descriptions.
+
+New `job_discoveries` tracks every successful employment `SaveDiscovered` call **transactionally**. This history begins with Phase 15, not retroactively; previously observed jobs have unknown first-discovery metadata. The existing provider `crawl_runs` history is read for source coverage evidence. No existing employment or project source is reconfigured or scheduled.
+
+See [Phase 15A data policies, usage, and local validation](docs/PHASE15_UNIFIED_OPPORTUNITIES.md).
+
 ## International remote boards — Phase 14 (manual preview)
 
 `--remote-boards-once` reads public [We Work Remotely RSS](https://weworkremotely.com/remote-job-rss-feed) (Backend and Programming) and the [Remotive Public API](https://remotive.com/remote-jobs/api) (Software Development, up to 250 records) **without login or PostgreSQL**. It emits attributed JSONL vacancy assessments and source-level PARTIAL/FAILED coverage logs. Results are *not yet* added to persistent JobRadar employment tables or scheduled scans.
