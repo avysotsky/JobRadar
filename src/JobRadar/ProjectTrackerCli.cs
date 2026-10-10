@@ -17,8 +17,8 @@ public static class ProjectTrackerCli
    string? value(string key)
    {
     var prefix=key+"=";
-    return args.FirstOrDefault(x=>x.StartsWith(prefix,StringComparison.OrdinalIgnoreCase))
-      ?[prefix.Length..];
+    var entry=args.FirstOrDefault(x=>x.StartsWith(prefix,StringComparison.OrdinalIgnoreCase));
+    return entry is null?null:entry[prefix.Length..];
    }
    string required(string name)=>value(name) is {Length:>0} result
     ? result : throw new ArgumentException("Missing "+name);
