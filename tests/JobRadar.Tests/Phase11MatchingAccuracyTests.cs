@@ -109,6 +109,23 @@ public sealed class Phase11MatchingAccuracyTests
   Assert.Equal(FitBucket.LikelyFit,a.Bucket);
  }
 
+ [Fact]
+ public void UnrelatedAdvancedTechnicalSkillDoesNotImplyAdvancedEnglish()
+ {
+  var a=Assess("Middle C# Backend Developer",
+   "Advanced SQL tuning and database design. Written English B1 is sufficient.");
+  Assert.Equal(FitBucket.LikelyFit,a.Bucket);
+ }
+
+ [Fact]
+ public void OptionalAngularMustNotSuppressMandatoryReact()
+ {
+  var a=Assess("Middle .NET Backend",
+   "React is mandatory. Angular is optional.");
+  Assert.Equal(FitBucket.NeedsReview,a.Bucket);
+  Assert.Contains(a.Warnings,w=>w.Contains("Fullstack/Frontend"));
+ }
+
  [Theory]
  [InlineData("Remote or hybrid work options available.")]
  [InlineData("Hybrid / remote opportunities available.")]
