@@ -81,9 +81,14 @@ public static class OpportunityPreview
     if(line is null)break;
     if(string.IsNullOrWhiteSpace(line))continue;
     total++;
+    // Upwork connector snapshots are short-lived and bounded. Do not let
+    // direct in-process imports bypass the 100-row/32k-char provider cap.
+    if(kind==OpportunityInputKind.Upwork && total>UpworkProjects.MaxRows)
+     throw new InvalidDataException("Upwork snapshot exceeds 100 record limit");
     // Manual exports only: cap a single untrusted JSONL record. Avoid logging
     // full payloads (they could contain customer details or credentials).
-    if(line.Length>128_000){rejected++;continue;}
+    if(line.Length>(kind==OpportunityInputKind.Upwork?32_000:128_000))
+    {rejected++;continue;}
     if(!TryParse(kind,line,out var item)||
        !Key(item!.Kind,item.Url,out var key))
     {
