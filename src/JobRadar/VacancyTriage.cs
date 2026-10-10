@@ -24,7 +24,7 @@ public static class VacancyTriage
  private static readonly Regex Net = new(
   @"(?<![a-z0-9])(?:asp\.net|\.net|dotnet|c#|csharp|c[- ]sharp)(?![a-z0-9])",Flags);
  private static readonly Regex Middle = new(
-  @"\b(?:middle|mid[- ]level|junior[- ]strong|strong[- ]junior|мідл|мидл|середн(?:ій|его)\s+рів(?:ень|ня))\b",Flags);
+  @"\b(?:middle|mid|mid[- ]level|junior[- ]strong|strong[- ]junior|мідл|мидл|середн(?:ій|его)\s+рів(?:ень|ня))\b",Flags);
  private static readonly Regex SeniorTitle = new(
   @"\b(?:senior|sr\.?|principal|staff|lead|architect|сеньйор|сеньор|ведущий|провідний)\b",Flags);
  private static readonly Regex Hybrid = new(
@@ -37,15 +37,24 @@ public static class VacancyTriage
   @"\b(?:fully[- ]remote|remote[- ]first|remote[- ]only|remote\s+(?:position|role|work|job|available|within)|work\s+(?:fully\s+)?remotely|work\s+from\s+home|wfh)\b|(?<![a-z])remote(?![a-z])|віддален|дистанційн|дистанционн|удал[её]н|робот[а-яіїє]*\s+з\s+дому",Flags);
 
  private static readonly Regex ExplicitB2 = new(
-  @"(?:english|англійськ[а-яіїє]*|английск[а-я]*).{0,42}\b(?:b2|c1|c2|upper[- ]intermediate|advanced)\b|\b(?:b2|c1|c2)\b.{0,28}(?:english|англійськ|английск)",Flags);
+  @"(?:english|англійськ[а-яіїє]*|английск[а-я]*).{0,42}\b(?:b2|c1|c2|upper[ -]intermediate|advanced)\b|\b(?:b2|c1|c2|upper[ -]intermediate|advanced)\b.{0,42}(?:english|англійськ|английск)",Flags);
+ // Both "English Upper-Intermediate" and "Upper-Intermediate English" are
+ // review signals; they may still be desirable/optional rather than mandatory.
+ private static readonly Regex AmbiguousWorkMode = new(
+  @"\bremote\s*(?:/|or|and/or)\s*hybrid\b|\bhybrid\s*(?:/|or|and/or)\s*remote\b|(?:віддален|дистанційн|удал[её]н)[а-яіїє]*\s+(?:або|или)\s+гібрид[а-яіїє]*",
+  Flags);
  private static readonly Regex SpokenEnglish = new(
   @"(?:spoken|speaking|oral|розмовн|разговорн).{0,35}(?:english|англійськ|английск)|(?:english|англійськ|английск).{0,35}(?:spoken|speaking|oral|розмовн|разговорн)",Flags);
 
  public static WorkMode DetectWorkMode(string title,string description)
  {
   var text=Normalize(title+" "+description);
-  if(Hybrid.IsMatch(text))return WorkMode.Hybrid;
+  // "Remote or hybrid" states alternatives, not required attendance. Retain
+  // definite office days/onsite instructions as hard constraints.
+  var unambiguous=AmbiguousWorkMode.Replace(text," ");
+  if(Hybrid.IsMatch(unambiguous))return WorkMode.Hybrid;
   if(NoRemote.IsMatch(text) || Onsite.IsMatch(text))return WorkMode.Onsite;
+  if(AmbiguousWorkMode.IsMatch(text))return WorkMode.Unknown;
   // "Remote teams" and "remote access" alone do not establish a remote position.
   var withoutNoise=Regex.Replace(text,@"\bremote\s+(?:teams?|access|clients?|systems?|servers?)\b","",Flags);
   return Remote.IsMatch(withoutNoise)?WorkMode.Remote:WorkMode.Unknown;
@@ -60,7 +69,14 @@ public static class VacancyTriage
   var warnings=new List<string>();
   var mode=DetectWorkMode(title,body);
   var eligibility=VacancyEligibility.Analyze(title,body);
+  var role=VacancyRoleRequirements.Analyze(title,body);
   warnings.AddRange(eligibility.Warnings);
+  if(role.SeniorRoleInDescription)
+   warnings.Add("Описание указывает на Senior/Lead-уровень роли — требуется проверка");
+  if(role.FrontendOrFullstackCore)
+   warnings.Add("Fullstack/Frontend или обязательный JavaScript framework — требуется проверка");
+  if(role.MobileDesktopCore)
+   warnings.Add("Mobile/Desktop (.NET MAUI/Xamarin/WPF) в названии — требуется проверка");
   int score=0;
 
   if(Net.IsMatch(all)){score+=35;reasons.Add("C#/.NET указан в вакансии");}
@@ -112,7 +128,7 @@ public static class VacancyTriage
   else if(mode==WorkMode.Remote && job.HasFullText && job.IsOpen!=false
     && score>=65 && !ExplicitB2.IsMatch(all)
     && !SpokenEnglish.IsMatch(all) && !SeniorTitle.IsMatch(title)
-    && !eligibility.RequiresReview)
+    && !eligibility.RequiresReview && !role.RequiresReview)
    tier=FitBucket.LikelyFit;
   else tier=FitBucket.NeedsReview;
   return new VacancyAssessment(job,mode,tier,score,reasons,warnings);
