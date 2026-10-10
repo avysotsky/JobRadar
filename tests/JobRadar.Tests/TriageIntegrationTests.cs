@@ -58,7 +58,7 @@ public sealed class TriageIntegrationTests
    Assert.DoesNotContain(selected,line=>line.Contains(b.Url,StringComparison.Ordinal));
    Assert.DoesNotContain(selected,line=>line.Contains(uncertain.Url,StringComparison.Ordinal));
    Assert.Contains(review,line=>line.Contains(uncertain.Url,StringComparison.Ordinal));
-   using var compactJson=JsonDocument.Parse(Assert.Single(compact.Where(line=>line.Contains(a.Url))));
+   using var compactJson=JsonDocument.Parse(Assert.Single(compact, line=>line.Contains(a.Url,StringComparison.Ordinal)));
    Assert.Equal("LikelyFit",compactJson.RootElement.GetProperty("Bucket").GetString());
    Assert.False(compactJson.RootElement.TryGetProperty("Description",out _));
    Assert.False(compactJson.RootElement.TryGetProperty("Vacancy",out _));
