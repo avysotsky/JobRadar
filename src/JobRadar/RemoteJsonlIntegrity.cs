@@ -91,7 +91,8 @@ public sealed record RemoteJsonlIntegrityReport(
 public static class RemoteBoardFileExport
 {
  public static async Task<RemoteBoardFileResult> WriteAsync(
-  HttpClient http,string path,Action<string>? progress,CancellationToken ct)
+  HttpClient http,string path,Action<string>? progress,CancellationToken ct,
+  bool wwrOnly=false,bool includeFullstack=false)
  {
   if(string.IsNullOrWhiteSpace(path)||
      !path.EndsWith(".jsonl",StringComparison.OrdinalIgnoreCase))
@@ -110,7 +111,9 @@ public static class RemoteBoardFileExport
        FileShare.None,65536,FileOptions.Asynchronous))
    await using(var writer=new StreamWriter(stream,new UTF8Encoding(false,true)))
    {
-    report=await RemoteBoards.ScanAsync(http,writer,progress,ct);
+    report=wwrOnly
+     ?await RemoteBoards.ScanWwrAsync(http,writer,progress,ct,includeFullstack)
+     :await RemoteBoards.ScanAsync(http,writer,progress,ct);
     await writer.FlushAsync(ct);
    }
    var integrity=await RemoteJsonlIntegrity.CheckAsync(temp,ct);

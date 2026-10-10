@@ -52,33 +52,54 @@ if(remoteAuditArg is not null)
   return 4;
  }
 }
-if(args.Contains("--remote-boards-once"))
+// A canonical WWR JobRef bridge exists, but DB retention is deliberately
+// prohibited pending source-specific written permission and a deletion policy.
+// Neither EnabledWwr nor this command ever initiates database writes.
+if(args.Contains("--wwr-ingest-once"))
 {
- // Manual-only public RSS/API discovery. No PostgreSQL and no auto-scheduling.
+ Console.Error.WriteLine("WWR DB ingestion BLOCKED: source retention/use permission not verified. Use --wwr-once for read-only RSS.");
+ return 4;
+}
+if(args.Contains("--remote-boards-once") || args.Contains("--wwr-once"))
+{
+ // Manual-only public RSS/API discovery. Neither mode touches PostgreSQL.
+ // --wwr-once makes exactly two WWR requests (third is explicit opt-in).
  try
  {
+  bool wwrOnly=args.Contains("--wwr-once");
+  if(wwrOnly && args.Contains("--remote-boards-once"))
+   throw new ArgumentException("Select --wwr-once OR --remote-boards-once");
+  bool fullstack=args.Contains("--wwr-fullstack");
+  if(fullstack && !wwrOnly)
+   throw new ArgumentException("--wwr-fullstack requires --wwr-once");
   using var handler=new HttpClientHandler {AllowAutoRedirect=false};
   using var remoteClient=new HttpClient(handler)
    {Timeout=TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds,5,60))};
   remoteClient.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
+  var outputPrefix=wwrOnly?"--wwr-output=":"--remote-boards-output=";
   var outputArg=args.FirstOrDefault(x=>
-   x.StartsWith("--remote-boards-output=",StringComparison.OrdinalIgnoreCase));
+   x.StartsWith(outputPrefix,StringComparison.OrdinalIgnoreCase));
   RemoteBoardsReport report;
   if(outputArg is null)
   {
-   report=await RemoteBoards.ScanAsync(remoteClient,Console.Out,
-    message=>Console.Error.WriteLine(message),CancellationToken.None);
+   report=wwrOnly
+    ?await RemoteBoards.ScanWwrAsync(remoteClient,Console.Out,
+      message=>Console.Error.WriteLine(message),CancellationToken.None,fullstack)
+    :await RemoteBoards.ScanAsync(remoteClient,Console.Out,
+      message=>Console.Error.WriteLine(message),CancellationToken.None);
   }
   else
   {
-   var path=outputArg["--remote-boards-output=".Length..];
+   var path=outputArg[outputPrefix.Length..];
    var result=await RemoteBoardFileExport.WriteAsync(remoteClient,path,
-    message=>Console.Error.WriteLine(message),CancellationToken.None);
+    message=>Console.Error.WriteLine(message),CancellationToken.None,
+    wwrOnly,fullstack);
    report=result.Report;
    Console.Error.WriteLine("Verified UTF-8 JSONL: "+JsonlOutput.Serialize(
     new {result.Path,result.Integrity}));
   }
-  Console.Error.WriteLine("Remote boards completed: "+JsonlOutput.Serialize(report));
+  Console.Error.WriteLine((wwrOnly?"WWR RSS":"Remote boards")+
+   " completed: "+JsonlOutput.Serialize(report));
   return report.Sources.Any(x=>x.Status=="FAILED"||x.DroppedRecords>0)?4:0;
  }
  catch(Exception e) when(e is not OperationCanceledException)

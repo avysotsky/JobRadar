@@ -16,6 +16,14 @@ An independent manual scanner for authenticated [Freelancehunt API v2](https://a
 
 The scanner parses provider URLs, budgets, bid counts, skills and account restrictions; deduplicates projects and reports partial coverage/dropped records. It is not a job-board completeness guarantee and never bids. No live authenticated scan has been made. See [Phase 13 implementation and access instructions](docs/PHASE13_FREELANCEHUNT.md).
 
+## WWR RSS integration hardening — manual and read-only
+
+We Work Remotely is already present through the Phase 14 RSS adapter. The WWR hardening workstream adds **`--wwr-once`** (Backend + Programming RSS only; **zero Remotive/API calls**), an optional `--wwr-fullstack` third feed, and `--wwr-output=FILE.jsonl` for verified direct UTF-8/no-BOM output. `--remote-boards-once` remains a backward-compatible two-WWR-plus-Remotive command.
+
+WWR duplicate RSS entries are merged by canonical original posting URL with all feed-query provenance retained. Diagnostics include per-feed parsed, accepted, dropped and duplicate counts, malformed publication dates, and partial/failed status. Source strings in older JSONL remain unchanged; a separate canonical `wwr` identity is available for future integration. All WWR data stays RSS-preview-only, with open/Ukraine work eligibility unverified.
+
+**WWR PostgreSQL ingestion is BLOCKED pending clarification of provider copying/retention terms.** `EnabledWwr=false` is the default, and regular `--once` / Kyiv scheduling ignore WWR even when the flag is changed. `--wwr-ingest-once` explicitly refuses to write; no WWR API, HTML scraping, paid Pro or automatic applications are used. [Implementation, terms and acceptance](docs/WWR_RSS_READONLY_INTEGRATION.md).
+
 ## Phase 17 — targeted remote review priorities (offline-compatible)
 
 The remote-board classifier now adds **`ReviewPriority`** and `ReviewEvidence` to distinguish C#/.NET evidence, adjacent AI engineering, geographic verification, unknown stacks, and low-relevance roles. This is an **independent manual-review queue**: the pre-existing `LikelyFit`, `NeedsReview`, `Excluded` and partial-coverage semantics are unchanged. RSS-only vacancies are not silently excluded because they lack a C# keyword.
