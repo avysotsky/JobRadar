@@ -27,6 +27,28 @@ if(args.Contains("--remote-boards-once"))
  Console.Error.WriteLine("Remote boards completed: "+JsonlOutput.Serialize(report));
  return report.Sources.Any(x=>x.Status=="FAILED"||x.DroppedRecords>0)?4:0;
 }
+if(args.Contains("--freelancehunt-once"))
+{
+ // No PostgreSQL, no scheduled scans, no bids or writes to provider.
+ try
+ {
+  using var handler=new HttpClientHandler {AllowAutoRedirect=false};
+  using var client=new HttpClient(handler)
+   {Timeout=TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds,5,60))};
+  client.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
+  var report=await FreelancehuntProjects.ScanAsync(client,Console.Out,
+   Environment.GetEnvironmentVariable("FREELANCEHUNT_API_TOKEN"),
+   options.FreelancehuntSkillIds,options.FreelancehuntMaxPages,
+   message=>Console.Error.WriteLine(message),CancellationToken.None);
+  Console.Error.WriteLine("Freelancehunt completed: "+JsonlOutput.Serialize(report));
+  return report.DroppedRecords==0?0:4;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Freelancehunt scan unavailable: "+e.Message);
+  return 4;
+ }
+}
 if(args.Contains("--freelancer-once"))
 {
  // Opt-in command is deliberately independent of PostgreSQL and the daily

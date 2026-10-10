@@ -35,4 +35,7 @@ public sealed class RadarOptions
  public string[] FreelancerQueries { get; set; } = ["C# .NET", "ASP.NET Core", "trading bot", "broker API", "webhook automation"];
  public int FreelancerPageSize { get; set; } = 20;
  public int FreelancerMaxPagesPerQuery { get; set; } = 1;
+ // Manual-only authenticated Freelancehunt API; provider-side filter uses skill IDs.
+ public int[] FreelancehuntSkillIds { get; set; } = [];
+ public int FreelancehuntMaxPages { get; set; } = 2;
 }

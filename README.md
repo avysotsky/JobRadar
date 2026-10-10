@@ -10,6 +10,12 @@
 
 Phase 8 adds conservative geographical and role-eligibility review gates, multilingual synthetic regression cases, and review-backlog metrics. See [Phase 8 design](docs/PHASE8_ELIGIBILITY.md). The Phase 8 branch passed the owner's local Release build and all **84/84 xUnit tests**, including PostgreSQL 16 integration tests against an isolated `jobradar_test` database on 2026-10-09. These results do not validate live provider coverage or deployment.
 
+## Freelancehunt projects — Phase 13
+
+An independent manual scanner for authenticated [Freelancehunt API v2](https://apidocs.freelancehunt.com/) `GET /v2/projects` discovery is available through `--freelancehunt-once`. It requires `FREELANCEHUNT_API_TOKEN` and writes a scored JSONL stream to the console only; never mixed with salary vacancies, `jobs` storage or the regular crawler. By default, it reads at most **two provider pages**; optional filter IDs must come from the provider's skills catalog.
+
+The scanner parses provider URLs, budgets, bid counts, skills and account restrictions; deduplicates projects and reports partial coverage/dropped records. It is not a job-board completeness guarantee and never bids. No live authenticated scan has been made. See [Phase 13 implementation and access instructions](docs/PHASE13_FREELANCEHUNT.md).
+
 ## International remote boards — Phase 14 (manual preview)
 
 `--remote-boards-once` reads public [We Work Remotely RSS](https://weworkremotely.com/remote-job-rss-feed) (Backend and Programming) and the [Remotive Public API](https://remotive.com/remote-jobs/api) (Software Development, up to 250 records) **without login or PostgreSQL**. It emits attributed JSONL vacancy assessments and source-level PARTIAL/FAILED coverage logs. Results are *not yet* added to persistent JobRadar employment tables or scheduled scans.
