@@ -32,6 +32,14 @@ CREATE TABLE IF NOT EXISTS job_queries (
  last_seen timestamptz NOT NULL DEFAULT now(),
  PRIMARY KEY(source,url,query_name),
  FOREIGN KEY(source,url) REFERENCES jobs(source,url) ON DELETE CASCADE);
+CREATE TABLE IF NOT EXISTS job_discoveries (
+ id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ source text NOT NULL, url text NOT NULL,
+ observed_at timestamptz NOT NULL DEFAULT now(),
+ query_name text,
+ FOREIGN KEY(source,url) REFERENCES jobs(source,url) ON DELETE CASCADE);
+CREATE INDEX IF NOT EXISTS ix_job_discoveries_source_url_observed_at
+ ON job_discoveries(source,url,observed_at DESC);
 CREATE TABLE IF NOT EXISTS crawl_runs (
  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, started_at timestamptz NOT NULL,
  ended_at timestamptz NOT NULL, report jsonb NOT NULL);
@@ -52,6 +60,7 @@ CREATE TABLE IF NOT EXISTS fetch_errors (
  public async Task SaveDiscovered(JobRef job,CancellationToken ct,string? queryName=null)
  {
   await using var c=new NpgsqlConnection(connectionString);await c.OpenAsync(ct);
+  await using var tx=await c.BeginTransactionAsync(ct);
   const string sql="""
 INSERT INTO jobs(source,url,title,company,published_at,preview,last_seen)
 VALUES(@source,@url,@title,@company,@published,@preview,now())
@@ -62,7 +71,7 @@ ON CONFLICT(source,url) DO UPDATE SET
  preview=COALESCE(excluded.preview,jobs.preview),
  last_seen=excluded.last_seen;
 """;
-  await using var cmd=new NpgsqlCommand(sql,c);
+  await using var cmd=new NpgsqlCommand(sql,c,tx);
   cmd.Parameters.AddWithValue("source",job.Source);
   cmd.Parameters.AddWithValue("url",job.Url);
   cmd.Parameters.AddWithValue("title",job.Title);
@@ -76,12 +85,25 @@ ON CONFLICT(source,url) DO UPDATE SET
 INSERT INTO job_queries(source,url,query_name,last_seen)
 VALUES(@source,@url,@query,now())
 ON CONFLICT(source,url,query_name) DO UPDATE SET last_seen=excluded.last_seen
-""",c);
+""",c,tx);
    queryCmd.Parameters.AddWithValue("source",job.Source);
    queryCmd.Parameters.AddWithValue("url",job.Url);
    queryCmd.Parameters.AddWithValue("query",queryName);
    await queryCmd.ExecuteNonQueryAsync(ct);
   }
+  // Append exactly one observation per successful discovery invocation.
+  // Pre-Phase-15 visits cannot be reconstructed and remain unknown.
+  await using(var eventCmd=new NpgsqlCommand("""
+INSERT INTO job_discoveries(source,url,query_name)
+VALUES(@source,@url,@query)
+""",c,tx))
+  {
+   eventCmd.Parameters.AddWithValue("source",job.Source);
+   eventCmd.Parameters.AddWithValue("url",job.Url);
+   eventCmd.Parameters.AddWithValue("query",(object?)queryName??DBNull.Value);
+   await eventCmd.ExecuteNonQueryAsync(ct);
+  }
+  await tx.CommitAsync(ct);
  }
  public async Task Save(JobDetail job,CancellationToken ct)
  {
