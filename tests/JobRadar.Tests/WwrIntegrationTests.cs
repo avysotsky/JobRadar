@@ -192,6 +192,40 @@ public sealed class WwrIntegrationTests
  }
 
  [Fact]
+ public void CanonicalJobRefProjectionIsInMemoryOnlyAndPreservesQueries()
+ {
+  var opening=Assert.Single(RemoteBoards.ParseWwr(Rss(
+   Item(A,company:"Remote Acme")),"wwr-backend").Items);
+  var projected=WwrEmploymentProjection.Project(opening);
+  Assert.Equal("wwr",projected.Reference.Source);
+  Assert.Equal(A,projected.Reference.Url);
+  Assert.Equal(opening.Title,projected.Reference.Title);
+  Assert.Equal("Remote Acme",projected.Reference.Company);
+  Assert.Equal(opening.Excerpt,projected.Reference.Preview);
+  Assert.Equal(new[]{"wwr-backend"},projected.QueryNames);
+  Assert.Equal("We Work Remotely",projected.Attribution);
+  Assert.NotNull(projected.ObservedAt);
+  Assert.False(projected.HasFullText);
+  Assert.Null(projected.OpenStatus);
+  Assert.Throws<ArgumentException>(()=>WwrEmploymentProjection.Project(
+   opening with {Source="remotive"}));
+ }
+
+ [Fact]
+ public void DefaultOptionsAndScheduledFeedVariantsExcludeWwr()
+ {
+  var options=new RadarOptions();
+  Assert.False(options.EnabledWwr);
+  Assert.DoesNotContain(FeedVariants.Create(options),
+   source=>source.Name.StartsWith("wwr-",StringComparison.OrdinalIgnoreCase));
+  // Even if explicitly configured, the regular scheduler does not ingest WWR
+  // pending a separate provider-retention authorization and go-live decision.
+  options.EnabledWwr=true;
+  Assert.DoesNotContain(FeedVariants.Create(options),
+   source=>source.Name.StartsWith("wwr-",StringComparison.OrdinalIgnoreCase));
+ }
+
+ [Fact]
  public void XmlDtdIsNotAccepted()
  {
   const string xml="<!DOCTYPE foo [ <!ENTITY xxe SYSTEM 'file:///etc/passwd'> ]>"+
