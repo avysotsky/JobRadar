@@ -130,7 +130,7 @@ public sealed class OpportunityPreviewTests
   Assert.Equal(1,result.TotalUnique);
   Assert.Equal(1,result.Inputs[0].Duplicates);
   Assert.Equal(2,result.Inputs[0].LinesRead);
-  Assert.Equal(1,output.ToString().Split('\n',StringSplitOptions.RemoveEmptyEntries).Length);
+  Assert.Single(output.ToString().Split('\n',StringSplitOptions.RemoveEmptyEntries));
  }
 
  [Fact]
