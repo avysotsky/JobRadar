@@ -71,6 +71,48 @@ public sealed class RemoteBoardsTests
  }
 
  [Theory]
+ [InlineData("Worldwide except Ukraine")]
+ [InlineData("Europe, Ukraine")]
+ [InlineData("Ukraine not eligible")]
+ [InlineData("EMEA")]
+ public void AmbiguousOrNegativeUkraineLocationsAreNeverConfidentFit(string location)
+ {
+  var opening=RemoteBoards.ParseRemotive(Remotive).Items[0] with
+   {CandidateLocation=location};
+  var a=RemoteBoards.Assess(opening);
+  Assert.Equal(FitBucket.NeedsReview,a.Bucket);
+  Assert.Contains(a.Warnings,w=>w.Contains("Ukraine"));
+ }
+
+ [Fact]
+ public void ARequirementAfter2400CharactersStillBlocksLikelyFit()
+ {
+  var longDescription=
+   "Fully remote ASP.NET Core REST API PostgreSQL EF Core RabbitMQ. "+
+   new string('x',2500)+
+   " English B2 required for daily meetings.";
+  var json=JsonSerializer.Serialize(new
+  {
+   jobs=new[]{new{
+    id=900L,
+    url="https://remotive.com/remote-jobs/software-dev/long-text-900",
+    title="Middle .NET Backend Engineer",company_name="Example",
+    candidate_required_location="Worldwide",description=longDescription
+   }}
+  });
+  var opening=Assert.Single(RemoteBoards.ParseRemotive(json).Items);
+  Assert.True(opening.HasFullText);
+  Assert.True(opening.Excerpt.Length<=2401);
+  Assert.DoesNotContain("English B2",opening.Excerpt);
+  var assessed=RemoteBoards.Assess(opening);
+  Assert.Equal(FitBucket.NeedsReview,assessed.Bucket);
+  Assert.Contains(assessed.Warnings,w=>w.Contains("B2+"));
+  using var emitted=JsonDocument.Parse(JsonlOutput.Serialize(assessed));
+  Assert.False(emitted.RootElement.GetProperty("Opening")
+   .TryGetProperty("FullDescription",out _));
+ }
+
+ [Theory]
  [InlineData("{}")]
  [InlineData("{\"jobs\":null}")]
  [InlineData("{\"jobs\":{}}")]
