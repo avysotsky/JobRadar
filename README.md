@@ -16,6 +16,14 @@ An independent manual scanner for authenticated [Freelancehunt API v2](https://a
 
 The scanner parses provider URLs, budgets, bid counts, skills and account restrictions; deduplicates projects and reports partial coverage/dropped records. It is not a job-board completeness guarantee and never bids. No live authenticated scan has been made. See [Phase 13 implementation and access instructions](docs/PHASE13_FREELANCEHUNT.md).
 
+## Phase 17 — targeted remote review priorities (offline-compatible)
+
+The remote-board classifier now adds **`ReviewPriority`** and `ReviewEvidence` to distinguish C#/.NET evidence, adjacent AI engineering, geographic verification, unknown stacks, and low-relevance roles. This is an **independent manual-review queue**: the pre-existing `LikelyFit`, `NeedsReview`, `Excluded` and partial-coverage semantics are unchanged. RSS-only vacancies are not silently excluded because they lack a C# keyword.
+
+Run `--remote-boards-review=reports/remote-boards-verified-20261010-200319.jsonl` to re-prioritize the owner's validated 43-row snapshot **without any new provider requests or PostgreSQL access**. Existing snapshots without stored priorities are conservatively classified from their limited excerpts; live Phase 17 scans use the full received RSS/API descriptions in memory. The report prints only the NeedsReview queue and keeps current vacancy status and Ukraine eligibility unverified.
+
+`--opportunities-preview --remote-boards-file=PATH` carries the same priority field into unified employment output. [Phase 17 detailed design and validation](docs/PHASE17_REMOTE_REVIEW.md).
+
 ## Phase 16 — verified UTF-8/JSONL export and full received RSS classification
 
 The first live WWR/Remotive run found 43 unique postings but the Windows-redirection-saved JSONL was damaged (three invalid UTF-8 lines and three syntactically invalid JSON lines, overlapping on line 41). Run `--remote-boards-audit=PATH.jsonl` offline to identify malformed input and affected line numbers.
