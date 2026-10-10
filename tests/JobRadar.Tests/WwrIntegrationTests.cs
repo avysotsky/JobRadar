@@ -226,6 +226,14 @@ public sealed class WwrIntegrationTests
  }
 
  [Fact]
+ public void HtmlDocumentMasqueradingAsRssIsRejected()
+ {
+  Assert.Throws<InvalidDataException>(()=>RemoteBoards.ParseWwr(
+   "<html><body><item><title>Fake vacancy</title><link>"+
+    A+"</link></item></body></html>","wwr-backend"));
+ }
+
+ [Fact]
  public void XmlDtdIsNotAccepted()
  {
   const string xml="<!DOCTYPE foo [ <!ENTITY xxe SYSTEM 'file:///etc/passwd'> ]>"+
