@@ -30,16 +30,16 @@ public static class VacancyRoleRequirements
   @"\b(?:full[\s-]?stack|frontend|front[\s-]?end|react(?:\.js)?|angular|vue(?:\.js)?)\b",
   Flags);
  private static readonly Regex RequiredFrontend=new(
-  @"\b(?:required|mandatory|must\s+have|proficiency\s+(?:in|with)|strong\s+(?:experience|knowledge)\s+(?:in|with)|commercial\s+(?:front[\s-]?end|react|angular|vue)|experienced\s+in)\b.{0,100}\b(?:react(?:\.js)?|angular|vue(?:\.js)?|front[\s-]?end|next\.?js|javascript|typescript)\b"
-  + @"|\b(?:react(?:\.js)?|angular|vue(?:\.js)?|front[\s-]?end|next\.?js)\b.{0,55}\b(?:required|mandatory|must\s+have|commercial\s+experience|essential)\b"
-  + @"|\b(?:обов['’]язков[а-яіїє]*|обязательн[а-я]*)\b.{0,80}\b(?:react|angular|vue|frontend|фронтенд)\b",
+  @"\b(?:required|mandatory|must\s+have|proficiency\s+(?:in|with)|strong\s+(?:experience|knowledge)\s+(?:in|with)|commercial\s+(?:front[\s-]?end|react|angular|vue)|experienced\s+in)\b[^.;\n]{0,100}\b(?:react(?:\.js)?|angular|vue(?:\.js)?|front[\s-]?end|next\.?js|javascript|typescript)\b"
+  + @"|\b(?:react(?:\.js)?|angular|vue(?:\.js)?|front[\s-]?end|next\.?js)\b[^.;\n]{0,55}\b(?:required|mandatory|must\s+have|commercial\s+experience|essential)\b"
+  + @"|\b(?:обов['’]язков[а-яіїє]*|обязательн[а-я]*)\b[^.;\n]{0,80}\b(?:react|angular|vue|frontend|фронтенд)\b",
   Flags);
 
  // Scrub optional framework phrases before checking required technologies.
  // Otherwise "React nice to have, not mandatory" looks like "React mandatory".
  private static readonly Regex OptionalFrontend=new(
-  @"\b(?:react(?:\.js)?|angular|vue(?:\.js)?|front[\s-]?end|next\.?js)\b.{0,45}\b(?:nice\s+to\s+have|not\s+(?:mandatory|required)|optional)\b"
-  + @"|\b(?:optional|nice\s+to\s+have)\b.{0,30}\b(?:react(?:\.js)?|angular|vue(?:\.js)?|front[\s-]?end|next\.?js)\b",
+  @"\b(?:react(?:\.js)?|angular|vue(?:\.js)?|front[\s-]?end|next\.?js)\b[^.;\n]{0,45}\b(?:nice\s+to\s+have|not\s+(?:mandatory|required)|optional)\b"
+  + @"|\b(?:optional|nice\s+to\s+have)\b[^.;\n]{0,30}\b(?:react(?:\.js)?|angular|vue(?:\.js)?|front[\s-]?end|next\.?js)\b",
   Flags);
 
  private static readonly Regex MobileDesktopTitle=new(
