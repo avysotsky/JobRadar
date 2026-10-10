@@ -18,6 +18,23 @@ if(args.Contains("--smoke-robota"))return await RobotaLiveSmoke.RunAsync(options
 if(args.Contains("--smoke-djinni"))return await PublicSourceSmoke.RunAsync(new DjinniSource(),options,CancellationToken.None);
 if(args.Contains("--smoke-dou"))return await PublicSourceSmoke.RunAsync(new DouSource(),options,CancellationToken.None);
 if(args.Contains("--smoke-workua"))return await PublicSourceSmoke.RunAsync(new WorkUaSource("c#"),options,CancellationToken.None);
+var remoteReviewArg=args.FirstOrDefault(x=>
+ x.StartsWith("--remote-boards-review=",StringComparison.OrdinalIgnoreCase));
+if(remoteReviewArg is not null)
+{
+ try
+ {
+  var path=remoteReviewArg["--remote-boards-review=".Length..];
+  var summary=await RemoteReviewOffline.RunAsync(path,Console.Out,CancellationToken.None);
+  Console.Error.WriteLine("Remote review priorities: "+JsonlOutput.Serialize(summary));
+  return 0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Remote offline review failed: "+e.Message);
+  return 4;
+ }
+}
 var remoteAuditArg=args.FirstOrDefault(x=>
  x.StartsWith("--remote-boards-audit=",StringComparison.OrdinalIgnoreCase));
 if(remoteAuditArg is not null)

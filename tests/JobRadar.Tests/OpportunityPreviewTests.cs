@@ -151,6 +151,9 @@ public sealed class OpportunityPreviewTests
   Assert.Equal(1,result.EmploymentNeedsReview);
   Assert.Equal(0,result.EmploymentLikelyFit);
   Assert.Contains("confidence downgraded",output.ToString());
+  using var preview=JsonDocument.Parse(output.ToString());
+  Assert.Equal("DotNetEvidence",
+   preview.RootElement.GetProperty("RemoteReviewPriority").GetString());
  }
 
  [Theory]
