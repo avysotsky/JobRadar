@@ -10,6 +10,14 @@
 
 Phase 8 adds conservative geographical and role-eligibility review gates, multilingual synthetic regression cases, and review-backlog metrics. See [Phase 8 design](docs/PHASE8_ELIGIBILITY.md). The Phase 8 branch passed the owner's local Release build and all **84/84 xUnit tests**, including PostgreSQL 16 integration tests against an isolated `jobradar_test` database on 2026-10-09. These results do not validate live provider coverage or deployment.
 
+## Freelancer.com project scanner (Phase 12, strictly opt-in)
+
+Freelancer is a marketplace for **freelance projects**, separate from the DOU/Djinni/Robota salary-vacancy pipeline. The manual `--freelancer-once` command supports authenticated searches for C#/.NET, ASP.NET Core, trading bots, broker API integrations and webhooks. It ranks results and prints them to the console without storing them in PostgreSQL or changing the 265-vacancy audit.
+
+**Important:** Freelancer's User Agreement prohibits automated access, including API use, without express written permission, and the official API needs OAuth2. The command is disabled until `FLN_AUTOMATION_PERMISSION_GRANTED=true` (only after actually obtaining permission) and `FLN_OAUTH_TOKEN` are present. It never runs on the scheduler. Rate limits are bounded; no 401/403/429 retry and no CAPTCHA, anonymous scraping or token persistence.
+
+See [Phase 12 setup and permission requirements](docs/PHASE12_FREELANCER.md). No live Freelancer search has been performed from this repository. GitHub Actions remain disabled.
+
 ## Sources and evidence
 
 | Site | Discovery | Full-text | Evidence |

@@ -31,4 +31,8 @@ public sealed class RadarOptions
  public string[] RobotaQueries { get; set; } = [".net", "c-sharp", "backend"];
  public bool EnabledWorkUa { get; set; } = false; // Requires source permission/live verification
  public string[] WorkUaQueries { get; set; } = ["c#", ".net", "backend"];
+ // Freelancer.com requires provider permission and an OAuth token. Never scheduled.
+ public string[] FreelancerQueries { get; set; } = ["C# .NET", "ASP.NET Core", "trading bot", "broker API", "webhook automation"];
+ public int FreelancerPageSize { get; set; } = 20;
+ public int FreelancerMaxPagesPerQuery { get; set; } = 1;
 }
