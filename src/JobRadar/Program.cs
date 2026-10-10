@@ -186,6 +186,15 @@ if(args.Contains("--opportunities-preview"))
    if(path is null)continue;
    if(string.IsNullOrWhiteSpace(path)||!File.Exists(path))
     throw new FileNotFoundException("Local JSONL snapshot not found: "+kind);
+   // A connected Upwork snapshot is private, temporary and separately
+   // permissioned. Enforce the same file limits in the unified import path.
+   if(kind==OpportunityInputKind.Upwork)
+   {
+    var info=new FileInfo(path);
+    if(info.Length>UpworkProjects.MaxSnapshotBytes ||
+       DateTime.UtcNow-info.LastWriteTimeUtc>UpworkProjects.MaxAge)
+     throw new InvalidDataException("Upwork snapshot too large or older than 24h");
+   }
    // Fail closed on damaged UTF-8 rather than importing silently
    // substituted Unicode replacement characters.
    if(kind==OpportunityInputKind.RemoteBoards)
