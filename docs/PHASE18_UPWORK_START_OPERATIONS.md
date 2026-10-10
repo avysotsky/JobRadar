@@ -14,6 +14,20 @@ Official references:
 
 We can search connected Upwork **in ChatGPT right now**, manually review potential contracts, and bring a short-lived **personal connector snapshot** into local JobRadar through a file. Local JobRadar **does not automatically authenticate to Upwork or poll it**. A full official API job collector is **blocked until separate Upwork application credentials, scopes and permission** are verified.
 
+## Provider architecture decision: MCP and GraphQL are alternatives, not substitutes
+
+Upwork's **official MCP server** is hosted at [https://mcp.upwork.com/mcp](https://www.upwork.com/ai/mcp) and supports OAuth 2.1/Dynamic Client Registration for compatible external AI clients. It already works in the user's connected ChatGPT account. **Those ChatGPT OAuth tokens are not available to JobRadar on Windows**; separate local OAuth registration/authorization and provider permission assessment are required.
+
+Upwork also maintains the [GraphQL API](https://www.upwork.com/developer/documentation/graphql/api/docs/index.html), with separately managed API keys, OAuth2 and scopes. The standard API and MCP each have their own surfaces and access requirements; one is **not a drop-in replacement** for the other.
+
+**Chosen rollout:**
+1. **Working now:** connected Upwork MCP inside ChatGPT → bounded private JSONL snapshot → existing `UpworkProjects.TryAssess` and `OpportunityPreview` in JobRadar. A sample real snapshot contains eight Upwork jobs. No local OAuth credentials need to be copied into the repository.
+2. **Future MCP adapter:** .NET MCP-compatible client using its **own user-approved OAuth 2.1 grant**, permitted search scopes and careful upstream error/limit handling. Not implemented in this PR; no claim of background Upwork polling.
+3. **Future GraphQL adapter:** separate OAuth2-approved API client if API access/scopes allow the specified discovery workflow. Not implemented in this PR.
+4. Both direct adapters should converge on the current normalized `UpworkSnapshot` / `UpworkCandidate` contract; no duplicate scoring, automatic bidding, or bulk storage of third-party descriptions.
+
+An Upwork account connected within ChatGPT grants neither automated local access nor blanket permission to mirror job postings. The authorized read-only search capabilities of this account have been verified; future headless scheduling/retention still requires a provider-specific legal and technical go/no-go gate.
+
 ## Ephemeral snapshot format and CLI
 
 Input is user-authorized private JSONL; **one flat JSON object per line**:
@@ -81,7 +95,7 @@ Default run **does not crawl**. It displays \`--pending-status\`, writes \`--tri
 .\scripts\operate-now.ps1 -RunCrawler -UpworkFile '.\reports\upwork-connector-YYYYMMDD.jsonl'
 \`\`\`
 
-Only after confirming no Docker/Windows scheduled collector is running concurrently. The \`--once\` crawler includes the current authorized core sources (DOU, Djinni, Robota); it **does not** query Upwork, WWR, Remotive, Freelancer or Jooble. Incomplete source status and parser failures may yield exit code 4 **while preserving findings**. The operator script continues report generation after partial crawl errors but stops on DB-initialization/triage failures.
+Only after confirming no Docker/Windows scheduled collector is running concurrently. The \`--once\` crawler includes the current authorized core sources (DOU, Djinni, Robota); it **does not** query Upwork, WWR, Remotive, Freelancer or Jooble. Incomplete source status and parser failures may yield exit code 4 **while preserving findings**. The operator script continues report generation after partial crawl errors, then reports a non-successful operation instead of falsely claiming success; it stops immediately on DB-initialization/triage failures.
 
 **Initial operations is NOT full autonomous 24/7 production deployment.** Next workstream: DB-wide scan lease, host/deployment health checks, authorized cadence and new-only notification delivery. Do not silently activate schedules.
 
