@@ -43,6 +43,34 @@ CREATE INDEX IF NOT EXISTS ix_job_discoveries_source_url_observed_at
 CREATE TABLE IF NOT EXISTS crawl_runs (
  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, started_at timestamptz NOT NULL,
  ended_at timestamptz NOT NULL, report jsonb NOT NULL);
+-- Manual-only tracking of OWN decisions; never imported API descriptions.
+CREATE TABLE IF NOT EXISTS project_tracker (
+ provider text NOT NULL CHECK(provider IN ('freelancehunt','freelancer')),
+ url text NOT NULL, label text,
+ own_budget numeric(18,2), own_currency text,
+ created_at timestamptz NOT NULL DEFAULT now(),
+ updated_at timestamptz NOT NULL DEFAULT now(),
+ PRIMARY KEY(provider,url),
+ CHECK(length(url)<=1500),
+ CHECK(label IS NULL OR length(label)<=180),
+ CHECK(own_budget IS NULL OR own_budget>=0),
+ CHECK(own_currency IS NULL OR own_currency IN ('USD','EUR','UAH'))
+);
+CREATE TABLE IF NOT EXISTS project_tracker_events (
+ id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ provider text NOT NULL, url text NOT NULL,
+ event_type text NOT NULL CHECK(event_type IN
+  ('Saved','Applied','Replied','Interview','Won','Rejected','Withdrawn','Closed')),
+ event_at timestamptz NOT NULL DEFAULT now(),
+ own_note text,
+ FOREIGN KEY(provider,url) REFERENCES project_tracker(provider,url) ON DELETE CASCADE,
+ CHECK(own_note IS NULL OR length(own_note)<=500)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_project_tracker_applied_once
+ ON project_tracker_events(provider,url)
+ WHERE event_type='Applied';
+CREATE INDEX IF NOT EXISTS ix_project_tracker_events_recent
+ ON project_tracker_events(provider,url,event_at DESC,id DESC);
 CREATE TABLE IF NOT EXISTS api_request_budget (
  provider text PRIMARY KEY, requests_used int NOT NULL,
  upper_limit int NOT NULL CHECK(upper_limit BETWEEN 1 AND 500));
