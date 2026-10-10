@@ -52,6 +52,14 @@ if(remoteAuditArg is not null)
   return 4;
  }
 }
+// A canonical WWR JobRef bridge exists, but DB retention is deliberately
+// prohibited pending source-specific written permission and a deletion policy.
+// Neither EnabledWwr nor this command ever initiates database writes.
+if(args.Contains("--wwr-ingest-once"))
+{
+ Console.Error.WriteLine("WWR DB ingestion BLOCKED: source retention/use permission not verified. Use --wwr-once for read-only RSS.");
+ return 4;
+}
 if(args.Contains("--remote-boards-once") || args.Contains("--wwr-once"))
 {
  // Manual-only public RSS/API discovery. Neither mode touches PostgreSQL.
