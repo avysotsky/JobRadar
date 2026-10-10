@@ -69,8 +69,8 @@ public sealed class ProjectTrackingTests
   {
    await tracker.SaveManualProjectAsync("freelancehunt",url,"My .NET integration lead",400m,"UAH",CancellationToken.None);
    await tracker.SaveManualProjectAsync("freelancehunt",url,"My .NET integration lead",null,null,CancellationToken.None);
-   var initial=Assert.Single((await tracker.ReadTrackedProjectsAsync(CancellationToken.None))
-    .Where(x=>x.Url==url));
+   var initial=Assert.Single(await tracker.ReadTrackedProjectsAsync(CancellationToken.None),
+    x=>x.Url==url);
    Assert.Equal("Saved",initial.CurrentStatus);
    Assert.Equal(400m,initial.OwnBudget);
    Assert.Equal(0L,initial.EventCount);
@@ -81,8 +81,8 @@ public sealed class ProjectTrackingTests
     tracker.RecordOwnProjectEventAsync("freelancehunt",url,"Applied",null,CancellationToken.None));
    await tracker.RecordOwnProjectEventAsync("freelancehunt",url,"Replied",
     "Client requested clarification",CancellationToken.None);
-   var latest=Assert.Single((await tracker.ReadTrackedProjectsAsync(CancellationToken.None))
-    .Where(x=>x.Url==url));
+   var latest=Assert.Single(await tracker.ReadTrackedProjectsAsync(CancellationToken.None),
+    x=>x.Url==url);
    Assert.Equal("Replied",latest.CurrentStatus);
    Assert.NotNull(latest.AppliedAt);
    Assert.Equal(2L,latest.EventCount);
@@ -116,8 +116,8 @@ public sealed class ProjectTrackingTests
    await tracker.SaveManualProjectAsync("freelancehunt",url,null,null,null,CancellationToken.None);
    await Assert.ThrowsAsync<InvalidOperationException>(()=>
     tracker.RecordOwnProjectEventAsync("freelancehunt",url,"Won",null,CancellationToken.None));
-   Assert.Equal(0L,Assert.Single((await tracker.ReadTrackedProjectsAsync(CancellationToken.None))
-    .Where(x=>x.Url==url)).EventCount);
+   Assert.Equal(0L,Assert.Single(await tracker.ReadTrackedProjectsAsync(CancellationToken.None),
+    x=>x.Url==url).EventCount);
   }
   finally{await tracker.DeleteTrackedProjectAsync("freelancehunt",url,CancellationToken.None);}
  }
