@@ -68,8 +68,8 @@ public static class RemoteReviewTriage
   if(bucket!=FitBucket.NeedsReview)
    return new RemoteReviewAssessment(RemoteReviewPriority.NotApplicable,[]);
 
-  var title=opening.Title;
-  var text=opening.FullDescription??opening.Excerpt;
+  var title=opening.Title??"";
+  var text=opening.FullDescription??opening.Excerpt??"";
   // The Remotive location field is explicit provider metadata. Non-exact
   // regions (including country lists with Ukraine mixed in) require review.
   if(opening.Source=="remotive" &&
