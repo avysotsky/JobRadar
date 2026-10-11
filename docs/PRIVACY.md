@@ -38,6 +38,8 @@ See the user-controlled private PostgreSQL environment for operational status.
 ## Local publication safety gate
 
 The repository offers optional Git pre-commit and pre-push hooks in `.githooks/`.
+The installer uses worktree-local Git configuration when multiple worktrees exist,
+so a pinned operational worktree does not inherit the development hooks.
 Review the source, then run `python scripts/test_publication_guard.py`
 and `python scripts/install_publication_hooks.py` to enable hooks **locally**.
 Installing hooks does not contact GitHub or enable any workflow.
@@ -45,7 +47,7 @@ Installing hooks does not contact GitHub or enable any workflow.
 - `python scripts/publication_guard.py --mode staged` checks staged blobs.
 - `python scripts/publication_guard.py --mode branch --base origin/main` checks
   all introduced commits, including blobs subsequently deleted before HEAD.
-- Synthetic unit tests cover normal files, literal application URLs, sample
+- Seven synthetic unit tests cover normal files, literal application URLs, sample
   private email addresses, token-shaped strings, exports and commit history.
 
 The scanner denies CV/export/database artifacts, credential-shaped data,

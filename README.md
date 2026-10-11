@@ -292,5 +292,7 @@ python scripts/install_publication_hooks.py
 ```
 
 Local pre-commit and pre-push checks can block common unsafe publications.
+When multiple worktrees exist, installation is scoped to the current worktree;
+the separately pinned operational checkout is not changed.
 They cannot inspect GitHub PR descriptions or guarantee complete PII detection.
 GitHub Actions, Scheduler, and automated applications remain disabled.

@@ -79,5 +79,25 @@ class PrivacyGateTest(unittest.TestCase):
         self.assertEqual(self.gate("branch"), 4)
 
 
+    def test_installer_does_not_change_other_worktree(self):
+        import shutil
+        other = pathlib.Path(self.temp.name) / "ops"
+        self.git("worktree", "add", "-q", "-b", "synthetic-ops", str(other))
+        (self.repo / "scripts").mkdir(exist_ok=True)
+        (self.repo / ".githooks").mkdir(exist_ok=True)
+        shutil.copy(SCRIPT, self.repo / "scripts" / "publication_guard.py")
+        installer = pathlib.Path(__file__).with_name("install_publication_hooks.py")
+        shutil.copy(installer, self.repo / "scripts" / "install_publication_hooks.py")
+        for file in ("pre-commit", "pre-push"):
+            (self.repo / ".githooks" / file).write_text("#!/bin/sh\nexit 0\n")
+        p = subprocess.run([sys.executable, str(self.repo / "scripts" / "install_publication_hooks.py")],
+                           capture_output=True, text=True)
+        self.assertEqual(p.returncode, 0)
+        self.assertEqual(self.git("config", "--get", "core.hooksPath").strip(), ".githooks")
+        other_value = subprocess.run(["git", "-C", str(other), "config", "--get", "core.hooksPath"],
+                                     capture_output=True, text=True)
+        self.assertEqual(other_value.returncode, 1)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
