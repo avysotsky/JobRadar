@@ -266,6 +266,12 @@ if(args.Contains("--pending-status"))
 }
 if(args.Contains("--retry-failed"))
 {
+ await using var retryLease=await storage.TryAcquireCollectorLeaseAsync(CancellationToken.None);
+ if(retryLease is null)
+ {
+  Console.Error.WriteLine("JobRadar collector lease busy; retry not started (exit 5).");
+  return 5;
+ }
  using var client=new HttpClient{Timeout=TimeSpan.FromSeconds(options.TimeoutSeconds)};
  client.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
  var retry=new PendingRetry(new HttpFetcher(client,options.DelayMilliseconds),storage,options,ShowProgress);
@@ -274,7 +280,15 @@ if(args.Contains("--retry-failed"))
  return result.Failed==0?0:4;
 }
 if(args.Contains("--jooble-once"))
+{
+ await using var joobleLease=await storage.TryAcquireCollectorLeaseAsync(CancellationToken.None);
+ if(joobleLease is null)
+ {
+  Console.Error.WriteLine("JobRadar collector lease busy; Jooble quota and requests untouched (exit 5).");
+  return 5;
+ }
  return await JoobleRunner.RunAsync(storage,options,CancellationToken.None);
+}
 using var http=new HttpClient{Timeout=TimeSpan.FromSeconds(options.TimeoutSeconds)};
 http.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
 var sources=FeedVariants.Create(options).ToList();
@@ -286,6 +300,14 @@ async Task<int> Run(CancellationToken ct)
 {
  try
  {
+  // Cross-process exclusivity spans source fetch, DB writes, retry queue,
+  // crawl report and all error paths. Applies to --once and the scheduled loop.
+  await using var scanLease=await storage.TryAcquireCollectorLeaseAsync(ct);
+  if(scanLease is null)
+  {
+   Console.Error.WriteLine("JobRadar collector lease busy; crawl not started (exit 5).");
+   return 5;
+  }
   ShowProgress($"Crawl START, configured queries={sources.Count}");
   var report=await crawler.RunAsync(sources,ct);
   Directory.CreateDirectory(options.OutputDirectory);
