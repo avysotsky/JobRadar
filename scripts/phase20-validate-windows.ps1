@@ -17,8 +17,8 @@ foreach ($file in $files) {
  [void][System.Management.Automation.Language.Parser]::ParseFile(
   $path,[ref]$tokens,[ref]$errors)
  if ($errors.Count -gt 0) {
-  foreach ($error in $errors) {
-   Write-Error ($file+': '+$error.ToString())
+  foreach ($parseError in $errors) {
+   Write-Warning ($file+': '+$parseError.ToString())
   }
   throw "PowerShell parser failed: $file"
  }
