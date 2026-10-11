@@ -68,6 +68,29 @@ public sealed class OpportunityPreviewTests
  }
 
  [Fact]
+ public async Task ActionableOnlyKeepsFullCoverageCountsButPrintsShortlist()
+ {
+  var preview=new Dictionary<OpportunityInputKind,TextReader>
+  {
+   [OpportunityInputKind.RemoteBoards]=new StringReader(JsonlOutput.Serialize(Wwr()))
+  };
+  using var output=new StringWriter();
+  var report=await OpportunityPreview.WriteAsync([Employment()],
+   new Dictionary<(string,string),JobDiscoveryHistory>(),
+   [],preview,output,CancellationToken.None,actionableOnly:true);
+  Assert.Equal(2,report.TotalUnique);
+  Assert.Equal(1,report.EmploymentLikelyFit);
+  Assert.Equal(1,report.EmploymentNeedsReview);
+  Assert.Equal(1,report.Inputs[0].Accepted);
+  var line=Assert.Single(output.ToString().Split('\n',
+   StringSplitOptions.RemoveEmptyEntries));
+  using var item=JsonDocument.Parse(line);
+  Assert.Equal("Middle .NET Backend Engineer",
+   item.RootElement.GetProperty("Title").GetString());
+  Assert.Equal("LikelyFit",item.RootElement.GetProperty("Bucket").GetString());
+ }
+
+ [Fact]
  public async Task TypedInputsStaySeparateAndDoNotExposeProjectDescriptions()
  {
   var hunt=Hunt();
