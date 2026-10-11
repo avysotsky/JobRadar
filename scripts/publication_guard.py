@@ -119,7 +119,7 @@ def main() -> int:
         repo = args.repo.resolve()
         git(repo, "rev-parse", "--show-toplevel")
         count, errors = staged(repo) if args.mode == "staged" else branch(repo, args.base)
-    except (GuardError, OSError, UnicodeError):
+    except (GuardError, OSError, UnicodeError) as exc:
         print("JobRadar publication safety: BLOCKED (inspection unavailable).", file=sys.stderr)
         return 4
     if errors:
