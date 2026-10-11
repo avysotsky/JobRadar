@@ -58,21 +58,27 @@ try {
   & dotnet run --project $project -c Release -- --triage-jsonl
   if ($LASTEXITCODE -ne 0) {throw 'Triage export failed'}
  }
+ $upworkArg = @()
  if ($UpworkFile) {
   $path = (Resolve-Path -LiteralPath $UpworkFile -ErrorAction Stop).Path
   $hours = ((Get-Date).ToUniversalTime() -
    (Get-Item -LiteralPath $path).LastWriteTimeUtc).TotalHours
   if ($hours -gt 24) {throw 'Upwork file is older than 24 hours. Refresh it through the authorized connector.'}
   Write-Host 'Upwork: local, read-only, no Connects spent.'
-  & dotnet run --project $project -c Release -- "--upwork-preview=$path"
+  # Validate all ephemeral rows, but avoid printing eight full JSON objects
+  # twice. The Upwork summary is written separately to standard error.
+  & dotnet run --project $project -c Release -- "--upwork-preview=$path" | Out-Null
   if ($LASTEXITCODE -ne 0) {throw 'Upwork snapshot has invalid or expired rows'}
-  # Existing PostgreSQL jobs are read for unified view, but Upwork rows NEVER
-  # enter the database. Keep all source output in the terminal.
-  & dotnet run --project $project -c Release -- --opportunities-preview "--upwork-file=$path"
-  if ($LASTEXITCODE -ne 0) {throw 'Unified opportunity preview failed'}
+  $upworkArg = @("--upwork-file=$path")
  }
+ # Keep complete employment audit in reports/ via --triage-jsonl. An
+ # operator should see only the likely employment matches and Upwork
+ # Priority/Review, not all 298 rows, on the terminal.
+ Write-Host 'Actionable opportunity view (full employment audit remains in reports/):'
+ & dotnet run --project $project -c Release -- --opportunities-preview --opportunities-actionable @upworkArg
+ if ($LASTEXITCODE -ne 0) {throw 'Actionable opportunity preview failed'}
  if ($partialCrawler) {
-  throw 'JobRadar reports generated but the provider crawl was PARTIAL/FAILED. See crawl-*.json.'
+  throw 'DEGRADED coverage: crawl, PostgreSQL save and triage reports completed, but at least one source remained PARTIAL/FAILED. Review crawl-*.json; this is not loss of stored jobs.'
  }
  Write-Host 'Controlled JobRadar operation completed without reported crawl errors. See reports/ for persisted employment triage exports.'
 }
