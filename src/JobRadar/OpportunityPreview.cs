@@ -45,7 +45,8 @@ public static class OpportunityPreview
   IReadOnlyList<StoredSourceCoverage> crawlCoverage,
   IReadOnlyDictionary<OpportunityInputKind,TextReader> inputs,
   TextWriter output,CancellationToken ct,
-  IReadOnlyList<TrackedProject>? manuallyTracked=null)
+  IReadOnlyList<TrackedProject>? manuallyTracked=null,
+  bool actionableOnly=false)
  {
   var seen=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
   var items=new List<UnifiedOpportunity>();
@@ -147,6 +148,14 @@ public static class OpportunityPreview
      .ThenBy(x=>x.Url,StringComparer.OrdinalIgnoreCase))
   {
    ct.ThrowIfCancellationRequested();
+   // Operator-facing view: keep the complete audit and counts unchanged,
+   // but avoid dumping hundreds of irrelevant positions on the console.
+   // Never remove unselected jobs from storage or coverage totals.
+   if(actionableOnly &&
+      !((item.Kind==OpportunityKind.Employment && item.Bucket=="LikelyFit") ||
+        (item.Source=="upwork" &&
+         (item.Bucket=="Priority"||item.Bucket=="Review"))))
+    continue;
    await output.WriteLineAsync(JsonlOutput.Serialize(item).AsMemory(),ct);
   }
   await output.FlushAsync(ct);
