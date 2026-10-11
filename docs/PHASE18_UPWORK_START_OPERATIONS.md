@@ -95,9 +95,31 @@ Default run **does not crawl**. It displays \`--pending-status\`, writes \`--tri
 .\scripts\operate-now.ps1 -RunCrawler -UpworkFile '.\reports\upwork-connector-YYYYMMDD.jsonl'
 \`\`\`
 
-Only after confirming no Docker/Windows scheduled collector is running concurrently. The \`--once\` crawler includes the current authorized core sources (DOU, Djinni, Robota); it **does not** query Upwork, WWR, Remotive, Freelancer or Jooble. Incomplete source status and parser failures may yield exit code 4 **while preserving findings**. The operator script continues report generation after partial crawl errors, then reports a non-successful operation instead of falsely claiming success; it stops immediately on DB-initialization/triage failures.
+Only after confirming no Docker/Windows scheduled collector is running concurrently. The \`--once\` crawler includes the current authorized core sources (DOU, Djinni, Robota); it **does not** query Upwork, WWR, Remotive, Freelancer or Jooble. Incomplete source status and parser failures may yield exit code 4 **while preserving findings**. The operator script continues report generation after partial crawl errors, then reports a **DEGRADED** non-successful operation instead of falsely claiming full source coverage; it stops immediately on DB-initialization/triage failures. Use the read-only command without \`-RunCrawler\` for subsequent shortlist viewing without another round of provider requests.
 
 **Initial operations is NOT full autonomous 24/7 production deployment.** Next workstream: DB-wide scan lease, host/deployment health checks, authorized cadence and new-only notification delivery. Do not silently activate schedules.
+
+## Owner Windows live operating evidence (11 October 2026)
+
+The owner locally validated the Phase 18 branch at **252/252 xUnit PASS with PostgreSQL integration enabled** before first operational use. At 09:07–09:12 Kyiv, `scripts/operate-now.ps1 -RunCrawler -UpworkFile ...` on the operational `jobradar_live` database completed all seven configured query attempts and the PostgreSQL report export:
+
+| Source / query | Listings | Full descriptions | Coverage |
+|---|---:|---:|---|
+| DOU | 25 | 25 | PARTIAL (RSS not exhaustive) |
+| DOU C# RSS | 25 | 0 new, 25 cached | PARTIAL |
+| Djinni | 51 | 51 | PARTIAL (RSS not exhaustive) |
+| Djinni C# RSS | 100 | 95, 5 cached | PARTIAL |
+| Robota .NET | 54 | 0 | PARTIAL; full-text HTTP 403 |
+| Robota C# | 38 | 0 | PARTIAL; full-text HTTP 403 |
+| Robota backend | 35 (provider total 36) | 0 | PARTIAL; 1 malformed/missing identifier |
+
+**328 per-query references (not globally unique), 171 fetched full descriptions, 290 unique employment records stored overall**. Triage results: **13 LikelyFit, 110 NeedsReview, 167 Excluded**. All 290 job openings unverified. **85 blocked detail retries**; do not repeatedly retry HTTP 403. Upwork 8/8 valid private snapshot rows, 3 Priority, 5 Review; **298 unified jobs/projects**. The run returned **exit code 4 for incomplete sources**, but reports and database writes succeeded; the operator script correctly surfaced the degraded coverage instead of claiming completeness. No automatic Upwork proposals.
+
+### Operator-readable output hardening
+
+The first live run printed 298 verbose JSONL objects to PowerShell, including irrelevant roles. The subsequent same-PR update introduces `--opportunities-actionable`, a display-only filter for `--opportunities-preview`: **employment LikelyFit plus Upwork Priority/Review**. The complete saved employment audit, DB records, original source coverage diagnostics, and overall counts remain unchanged. The operator script validates the private Upwork file, suppresses duplicate verbose rows from `--upwork-preview`, and presents the actionable overview automatically (approximately 13 employment + 8 Upwork on the first recorded data). It still reports **DEGRADED** for partial source scans, not a false green status.
+
+**Code updated after the first 252/252 acceptance; new exact HEAD and a fresh owner-local .NET/PostgreSQL test run are required before this hardening is considered validated.** Re-run only `-UpworkFile` (without `-RunCrawler`) to inspect the new short console view after passing tests. This avoids unnecessary repeat HTTP requests.
 
 ## Roadmap after Upwork + first operations
 
