@@ -40,6 +40,28 @@ CREATE TABLE IF NOT EXISTS job_discoveries (
  FOREIGN KEY(source,url) REFERENCES jobs(source,url) ON DELETE CASCADE);
 CREATE INDEX IF NOT EXISTS ix_job_discoveries_source_url_observed_at
  ON job_discoveries(source,url,observed_at DESC);
+
+CREATE TABLE IF NOT EXISTS employment_tracker (
+ url text PRIMARY KEY,
+ label text,
+ created_at timestamptz NOT NULL DEFAULT now(),
+ updated_at timestamptz NOT NULL DEFAULT now(),
+ CHECK(length(url)<=1500),
+ CHECK(label IS NULL OR length(label)<=180)
+);
+CREATE TABLE IF NOT EXISTS employment_tracker_events (
+ id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ url text NOT NULL REFERENCES employment_tracker(url) ON DELETE CASCADE,
+ event_type text NOT NULL CHECK(event_type IN
+  ('Applied','Replied','Interview','Offer','Rejected','Withdrawn','Closed')),
+ event_at timestamptz NOT NULL DEFAULT now(),
+ own_note text,
+ CHECK(own_note IS NULL OR length(own_note)<=500)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_employment_tracker_applied_once
+ ON employment_tracker_events(url) WHERE event_type='Applied';
+CREATE INDEX IF NOT EXISTS ix_employment_tracker_events_latest
+ ON employment_tracker_events(url,id DESC);
 CREATE TABLE IF NOT EXISTS crawl_runs (
  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, started_at timestamptz NOT NULL,
  ended_at timestamptz NOT NULL, report jsonb NOT NULL);

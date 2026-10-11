@@ -158,6 +158,8 @@ if(args.Contains("--freelancer-once"))
 var cs=Environment.GetEnvironmentVariable("JOBRADAR_DB") ?? options.ConnectionString;
 var storage=new Storage(cs);
 try{await storage.Initialize(CancellationToken.None);}catch(Exception e){Console.Error.WriteLine("Database unavailable: "+e.Message);return 3;}
+if(args.Any(x=>x.StartsWith("--employment-track-",StringComparison.OrdinalIgnoreCase)))
+ return await EmploymentTrackerCli.RunAsync(storage,args,Console.Out,Console.Error,CancellationToken.None);
 if(args.Any(x=>x.StartsWith("--project-track-",StringComparison.OrdinalIgnoreCase)))
  return await ProjectTrackerCli.RunAsync(storage,args,Console.Out,Console.Error,CancellationToken.None);
 if(args.Contains("--opportunities-preview"))
@@ -213,9 +215,11 @@ if(args.Contains("--opportunities-preview"))
   var histories=await storage.ReadDiscoveryHistoriesAsync(CancellationToken.None);
   var coverage=await storage.ReadLatestCoverageAsync(20,CancellationToken.None);
   var tracked=await storage.ReadTrackedProjectsAsync(CancellationToken.None);
+  var employmentTracking=await storage.ReadTrackedEmploymentAsync(CancellationToken.None);
   var result=await OpportunityPreview.WriteAsync(
    jobs,histories,coverage,readers,Console.Out,CancellationToken.None,tracked,
-   actionableOnly:args.Contains("--opportunities-actionable"));
+   actionableOnly:args.Contains("--opportunities-actionable"),
+   trackedEmployment:employmentTracking);
   Console.Error.WriteLine("Opportunities preview: "+JsonlOutput.Serialize(new
    {Result=result,TotalStoredEmployment=stored,EmploymentOmittedByLimit=Math.Max(0L,stored-jobs.Count)}));
   // Exit nonzero when export is truncated or any imported records failed to

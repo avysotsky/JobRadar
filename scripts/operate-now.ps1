@@ -79,7 +79,8 @@ try {
  & dotnet run --project $project -c Release -- --opportunities-preview --opportunities-actionable @upworkArg
  if ($LASTEXITCODE -ne 0) {throw 'Actionable opportunity preview failed'}
  if ($partialCrawler) {
-  throw 'DEGRADED coverage: crawl, PostgreSQL save and triage reports completed, but at least one source remained PARTIAL/FAILED. Review crawl-*.json; this is not loss of stored jobs.'
+  Write-Warning 'DEGRADED coverage: crawl and triage completed; source coverage remains PARTIAL/FAILED. Review crawl-*.json.'
+  exit 4
  }
  Write-Host 'Controlled JobRadar operation completed without reported crawl errors. See reports/ for persisted employment triage exports.'
 }

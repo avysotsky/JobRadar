@@ -23,6 +23,9 @@ public sealed record UnifiedOpportunity(
  // Hourly range and fixed-budget labels are not comparable scalar amounts.
  // Preserve Upwork's stated text rather than inventing a USD numeric budget.
  public string? BudgetLabel {get;init;}
+ // User-reported status is distinct from provider vacancy-open evidence.
+ public string? EmploymentStatus {get;init;}
+ public DateTimeOffset? EmploymentAppliedAt {get;init;}
 }
 
 public sealed record OpportunityInputCoverage(
@@ -35,7 +38,11 @@ public sealed record OpportunityPreviewSummary(
  int FreelancePriority,int FreelanceReview,int FreelanceLowMatch,
  IReadOnlyList<OpportunityInputCoverage> Inputs,
  IReadOnlyList<StoredSourceCoverage> RecordedCrawlCoverage,
- string HistoryNote,string CoverageNote,int ManuallyTrackedProjects);
+ string HistoryNote,string CoverageNote,int ManuallyTrackedProjects)
+{
+ public int EmploymentTracked {get;init;}
+ public int EmploymentApplied {get;init;}
+}
 
 public static class OpportunityPreview
 {
@@ -46,8 +53,11 @@ public static class OpportunityPreview
   IReadOnlyDictionary<OpportunityInputKind,TextReader> inputs,
   TextWriter output,CancellationToken ct,
   IReadOnlyList<TrackedProject>? manuallyTracked=null,
-  bool actionableOnly=false)
+  bool actionableOnly=false,
+  IReadOnlyList<TrackedEmployment>? trackedEmployment=null)
  {
+  var trackedByUrl=new Dictionary<string,TrackedEmployment>(StringComparer.OrdinalIgnoreCase);
+  foreach(var item in trackedEmployment??[])trackedByUrl[item.Url]=item;
   var seen=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
   var items=new List<UnifiedOpportunity>();
   foreach(var vacancy in employment)
@@ -62,13 +72,24 @@ public static class OpportunityPreview
    var assessment=VacancyTriage.Assess(vacancy);
    var warnings=assessment.Warnings.ToList();
    if(!validUrl)warnings.Add("Saved source URL is non-HTTPS or malformed; verify manually");
-   items.Add(new UnifiedOpportunity(
+   var employmentItem=new UnifiedOpportunity(
     OpportunityKind.Employment,vacancy.Source,vacancy.Url,vacancy.Title,
     vacancy.Company,assessment.Bucket.ToString(),assessment.Score,
     null,null,null,vacancy.PublishedAt,
     observation?.FirstObservedAt,vacancy.LastSeen,observation?.Observations,
     vacancy.Source,vacancy.StatusEvidence??"NOT_VERIFIED",
-    assessment.Reasons,warnings));
+    assessment.Reasons,warnings);
+   if(EmploymentTrackingPolicy.TryUrl(vacancy.Url,out var canonical) &&
+      canonical is not null && trackedByUrl.TryGetValue(canonical,out var ownerStatus))
+   {
+    employmentItem=employmentItem with
+    {
+     EmploymentStatus=ownerStatus.CurrentStatus,
+     EmploymentAppliedAt=ownerStatus.AppliedAt,
+     Warnings=warnings.Concat(["Owner-reported application status; not provider-verified"]).ToArray()
+    };
+   }
+   items.Add(employmentItem);
   }
 
   var inputCoverage=new List<OpportunityInputCoverage>();
@@ -151,6 +172,8 @@ public static class OpportunityPreview
    // Operator-facing view: keep the complete audit and counts unchanged,
    // but avoid dumping hundreds of irrelevant positions on the console.
    // Never remove unselected jobs from storage or coverage totals.
+   if(actionableOnly && item.Kind==OpportunityKind.Employment &&
+      item.EmploymentStatus is not null and not "Saved")continue;
    if(actionableOnly &&
       !((item.Kind==OpportunityKind.Employment && item.Bucket=="LikelyFit") ||
         (item.Source=="upwork" &&
@@ -172,7 +195,11 @@ public static class OpportunityPreview
    inputCoverage,crawlCoverage,
    "Individual job discoveries are tracked only since Phase 15; null means unknown, not zero.",
    "Feeds, local JSONL exports, and recent stored crawl reports do NOT guarantee total coverage or an open position.",
-   manuallyTracked?.Count??0);
+   manuallyTracked?.Count??0)
+   {
+    EmploymentTracked=items.Count(x=>x.Kind==OpportunityKind.Employment && x.EmploymentStatus is not null),
+    EmploymentApplied=items.Count(x=>x.Kind==OpportunityKind.Employment && x.EmploymentAppliedAt.HasValue)
+   };
  }
 
  private static bool TryParse(OpportunityInputKind kind,string json,out UnifiedOpportunity? item)
