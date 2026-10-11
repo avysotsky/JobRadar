@@ -9,7 +9,7 @@ public sealed class TriageIntegrationTests
  [Fact]
  public async Task ExportKeepsRejectedRecordsInAuditButNotShortlist()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var store=new Storage(cs);
   await store.Initialize(CancellationToken.None);
