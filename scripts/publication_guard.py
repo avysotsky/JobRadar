@@ -26,7 +26,7 @@ SIGNATURES = {
     "CREDENTIAL_ASSIGNMENT": re.compile(
         rb"(?i)\b(?:password|pwd|clientsecret|apisecret)\s*[:=]\s*"
         rb"(?!\$|\{|<|null\b|change_me\b|example\b|placeholder\b)"
-        rb"[^\s;'\\"]{8,}"
+        rb"[^\s;\x22\x27]{8,}"
     ),
     "CONNECTION_CREDENTIAL": re.compile(
         rb"(?i)\b(?:postgres(?:ql)?|mongodb(?:\+srv)?)://[^\s/@:]+:[^\s/@]+@"
