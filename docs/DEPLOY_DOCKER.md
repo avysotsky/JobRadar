@@ -30,7 +30,7 @@ docker compose run --rm collector --retry-failed
 docker compose run --rm collector --export-jsonl
 ```
 
-Do **not** run an on-demand crawl concurrently with the scheduled collector before implementing a database-wide scan lease. Use `docker compose stop collector` before manual `--once`, then `docker compose start collector`. Read-only status or exports are safe. Jooble remains separate and opt-in; do not run it automatically.
+**Phase 19 collector lease:** updated JobRadar binaries now attempt a dedicated PostgreSQL advisory lock before network crawling, manual retries and opt-in Jooble queries; a second current-version process targeting the **same PostgreSQL database** exits/skips with code **5** before fetching. This does **not** protect against an older collector binary or a collector using another database. Until Phase 19 is locally accepted and deployed everywhere, continue to **stop the scheduled collector before a manual `--once`**, then restart it. Read-only status/export remains safe; Jooble remains opt-in and never automatically scheduled.
 
 ## Obtain reports for review
 
