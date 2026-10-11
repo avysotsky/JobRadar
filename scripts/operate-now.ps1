@@ -44,6 +44,7 @@ try {
   $crawlCode = $LASTEXITCODE
   Write-Host "JobRadar crawl exit code: $crawlCode"
   if ($crawlCode -eq 3) {throw 'Cannot initialize PostgreSQL. Stop.'}
+  if ($crawlCode -eq 5) {throw 'Collector lease BUSY. No scan was performed; another instance owns the PostgreSQL lock.'}
   if ($crawlCode -ne 0) {
    $partialCrawler = $true
    Write-Warning 'Partial crawl/source errors reported. Check crawl-*.json before interpreting coverage.'
