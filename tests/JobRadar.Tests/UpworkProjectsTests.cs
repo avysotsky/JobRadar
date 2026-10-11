@@ -192,6 +192,26 @@ public sealed class UpworkProjectsTests
  }
 
  [Fact]
+ public async Task ActionableOutputIncludesAuthorizedUpworkPriorityAndReview()
+ {
+  var input=new Dictionary<OpportunityInputKind,TextReader>
+  {
+   [OpportunityInputKind.Upwork]=new StringReader(Row()+"\n")
+  };
+  using var output=new StringWriter();
+  var report=await OpportunityPreview.WriteAsync([],
+   new Dictionary<(string,string),JobDiscoveryHistory>(),
+   [],input,output,CancellationToken.None,actionableOnly:true);
+  Assert.Equal(1,report.TotalUnique);
+  Assert.Equal(1,report.FreelancePriority);
+  var line=Assert.Single(output.ToString().Split('\n',
+   StringSplitOptions.RemoveEmptyEntries));
+  using var item=JsonDocument.Parse(line);
+  Assert.Equal("upwork",item.RootElement.GetProperty("Source").GetString());
+  Assert.Equal("Priority",item.RootElement.GetProperty("Bucket").GetString());
+ }
+
+ [Fact]
  public async Task ReviewFileFailsClosedForUnboundedInputs()
  {
   var path=Path.Combine(Path.GetTempPath(),"jobradar-upwork-"+Guid.NewGuid()+".jsonl");
