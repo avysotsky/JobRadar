@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+ROOT="$(git rev-parse --show-toplevel)"
+if command -v python3 >/dev/null 2>&1; then
+  exec python3 "$ROOT/scripts/publication_guard.py" --mode staged --repo "$ROOT"
+elif command -v python >/dev/null 2>&1; then
+  exec python "$ROOT/scripts/publication_guard.py" --mode staged --repo "$ROOT"
+elif command -v py.exe >/dev/null 2>&1; then
+  exec py.exe -3 "$ROOT/scripts/publication_guard.py" --mode staged --repo "$ROOT"
+else
+  echo 'Publication gate unavailable: Python 3 not found. Commit blocked.' >&2
+  exit 4
+fi

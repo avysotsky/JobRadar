@@ -276,3 +276,21 @@ docker compose run --rm collector --triage-jsonl
 **Remote is a hard constraint**: explicit office attendance or hybrid schedules are excluded from the shortlist. If remote is not confirmed, the vacancy goes to human review, not to the confident recommendations. English B2+/spoken requirements are warning signals requiring checking, rather than silent exclusions. Full-text missing and active status unknown remain visible.
 
 Rules-based screening is intentionally conservative and can make errors, especially with multilingual advertisements or negation. Never automatically submit applications or delete records based on this ranking. Review source descriptions before responding. [Detailed decision rules](docs/PHASE7_TRIAGE.md).
+
+
+## Publication safety (optional local Git hooks)
+
+This repository is public. Real personal applications, recruiting replies,
+CVs, contacts, candidate notes and operational snapshots must never be
+committed or copied to GitHub. See [docs/PRIVACY.md](docs/PRIVACY.md).
+
+Run six synthetic local checks and explicitly install Git hooks if desired:
+
+```powershell
+python scripts/test_publication_guard.py
+python scripts/install_publication_hooks.py
+```
+
+Local pre-commit and pre-push checks can block common unsafe publications.
+They cannot inspect GitHub PR descriptions or guarantee complete PII detection.
+GitHub Actions, Scheduler, and automated applications remain disabled.

@@ -1,0 +1,15 @@
+#!/bin/sh
+set -eu
+ROOT="$(git rev-parse --show-toplevel)"
+BASE="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null || true)"
+if [ -z "$BASE" ]; then BASE='origin/main'; fi
+if command -v python3 >/dev/null 2>&1; then
+  exec python3 "$ROOT/scripts/publication_guard.py" --mode branch --base "$BASE" --repo "$ROOT"
+elif command -v python >/dev/null 2>&1; then
+  exec python "$ROOT/scripts/publication_guard.py" --mode branch --base "$BASE" --repo "$ROOT"
+elif command -v py.exe >/dev/null 2>&1; then
+  exec py.exe -3 "$ROOT/scripts/publication_guard.py" --mode branch --base "$BASE" --repo "$ROOT"
+else
+  echo 'Publication gate unavailable: Python 3 not found. Push blocked.' >&2
+  exit 4
+fi

@@ -8,3 +8,25 @@ appsettings.Local.json
 jobradar-reports/
 exports/
 *.jsonl
+
+# Never commit user-specific application artifacts, even accidentally
+*.pdf
+*.docx
+*.xlsx
+*.csv
+*.pfx
+*.p12
+*.pem
+*.key
+*.sqlite
+*.db
+*.dump
+*.bak
+*.log
+.env.*
+private/
+personal/
+credentials/
+secrets/
+backups/
+snapshots/
