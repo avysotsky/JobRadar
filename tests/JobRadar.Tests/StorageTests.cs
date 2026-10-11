@@ -9,7 +9,7 @@ public sealed class StorageTests
  public async Task DiscoverySurvivesDetailFailureAndFullFetchUpgradesIt()
  {
   // CI sets this to its disposable postgres service; developer machines may omit it.
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrEmpty(cs))return;
   var storage=new Storage(cs);
   await storage.Initialize(CancellationToken.None);
