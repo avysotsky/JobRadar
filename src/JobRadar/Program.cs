@@ -214,7 +214,8 @@ if(args.Contains("--opportunities-preview"))
   var coverage=await storage.ReadLatestCoverageAsync(20,CancellationToken.None);
   var tracked=await storage.ReadTrackedProjectsAsync(CancellationToken.None);
   var result=await OpportunityPreview.WriteAsync(
-   jobs,histories,coverage,readers,Console.Out,CancellationToken.None,tracked);
+   jobs,histories,coverage,readers,Console.Out,CancellationToken.None,tracked,
+   actionableOnly:args.Contains("--opportunities-actionable"));
   Console.Error.WriteLine("Opportunities preview: "+JsonlOutput.Serialize(new
    {Result=result,TotalStoredEmployment=stored,EmploymentOmittedByLimit=Math.Max(0L,stored-jobs.Count)}));
   // Exit nonzero when export is truncated or any imported records failed to
