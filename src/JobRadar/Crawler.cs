@@ -63,7 +63,24 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
        error??="Robota API contained records with missing or invalid vacancy identifiers";
       }
      }
-     if(!source.IsSinglePageFeed)total??=source.ReportedTotal(payload);
+     if(!source.IsSinglePageFeed)
+     {
+      var pageTotal=source.ReportedTotal(payload);
+      if(page==0)total=pageTotal;
+      else if(source is RobotaApiSource && pageTotal!=total)
+      {
+       // Query results are not a stable snapshot when the API's total changes
+       // (or disappears) between pages. Retain the first-page total as the
+       // reconciliation baseline, but never advertise a complete query.
+       uncertain=true;
+       error??=pageTotal is null
+        ?"Robota API reported total missing on subsequent page"
+        :total is null
+         ?"Robota API reported total first appeared on subsequent page"
+         :"Robota API reported total changed between pages";
+      }
+      else if(source is not RobotaApiSource)total??=pageTotal;
+     }
     }
     catch(Exception e) when(!ct.IsCancellationRequested)
     {

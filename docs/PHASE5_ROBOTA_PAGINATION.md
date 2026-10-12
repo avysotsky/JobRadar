@@ -27,6 +27,6 @@ The probe is deliberately bounded at three public result-page requests; it neith
 ## Remaining gaps
 
 - MaxPagesPerSource defaults to 12, so broad queries are deliberately incomplete.
-- API reported totals may change between page requests.
+- API reported totals may change between page requests. **Phase 23:** a changed, missing, or late-appearing total on later Robota pages marks the crawl `PARTIAL`, even if the number of unique URLs equals the first-page total. The first total remains a diagnostic baseline; a changing search result set is not a consistent snapshot. PostgreSQL-backed synthetic tests verify changed and missing totals without contacting Robota.
 - The company feed can be capped at 100; other permitted detail methods are needed for omitted IDs.
 - Remote-only filtering and active/closed classification require independent validation.
