@@ -107,6 +107,13 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
         (source is not RobotaApiSource || rawRecords==0))
      {
       reconciled=true;
+      // No vacancy requires full-text retrieval. A provider-confirmed zero
+      // cannot fail solely because Robota detail fetching is paused.
+      if(source is RobotaApiSource && !options.EnabledRobotaDetails)
+      {
+       uncertain=false;
+       error=null;
+      }
       break;
      }
      uncertain=true;
