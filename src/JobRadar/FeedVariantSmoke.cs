@@ -22,11 +22,16 @@ public static class FeedVariantSmoke
    try
    {
     var xml=await fetch.GetAsync(source.ListingUrl(0),ct);
-    var jobs=source.ParseListings(xml);
-    if(jobs.Count==0)throw new InvalidDataException("Feed contained no usable vacancy references");
+    var feed=((IRssFeedSource)source).ParseFeed(xml);
+    var jobs=feed.Jobs;
+    if(jobs.Count==0)throw new InvalidDataException(
+     $"RSS returned raw={feed.RawItems} but no usable vacancy references");
     var fresh=jobs.Count(j=>seen.Add(j.Source+":"+j.Url));
-    result.Add(new {source=source.Name,entries=jobs.Count,uniqueAdded=fresh,
-      firstUrl=jobs[0].Url,status="PASS_UNVERIFIED_COVERAGE"});
+    if(feed.DiscardedItems>0)failed=true;
+    result.Add(new {source=source.Name,rawItems=feed.RawItems,
+      unusableItems=feed.UnusableItems,duplicateItems=feed.DuplicateItems,
+      entries=jobs.Count,uniqueAdded=fresh,firstUrl=jobs[0].Url,
+      status=feed.DiscardedItems>0?"PARTIAL_RSS_ITEM_LOSS":"PASS_UNVERIFIED_COVERAGE"});
    }
    catch(Exception ex) when(!ct.IsCancellationRequested)
    {

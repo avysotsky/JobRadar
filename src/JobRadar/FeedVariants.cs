@@ -5,7 +5,7 @@ namespace JobRadar;
 /// Each result retains its canonical DOU/Djinni source key, while Name records
 /// the filter that discovered it. RSS caps are never treated as exhaustive.
 /// </summary>
-public sealed class DouKeywordFeed(string keyword) : IJobSource
+public sealed class DouKeywordFeed(string keyword) : IRssFeedSource
 {
  public string Name=>"dou-rss-"+keyword;
  public Uri Home=>new("https://jobs.dou.ua/");
@@ -13,11 +13,11 @@ public sealed class DouKeywordFeed(string keyword) : IJobSource
  public string ListingUrl(int page)=>page==0
     ? "https://jobs.dou.ua/vacancies/feeds/?remote=&search="+Uri.EscapeDataString(keyword)
     : throw new NotSupportedException("DOU RSS does not expose complete paging");
- public IReadOnlyList<JobRef> ParseListings(string payload)=>
-  new DouSource().ParseListings(payload).Select(x=>x with {Source="dou"}).ToArray();
+ public IReadOnlyList<JobRef> ParseListings(string payload)=>ParseFeed(payload).Jobs;
+ public RssFeedPage ParseFeed(string payload)=>new DouSource().ParseFeed(payload);
 }
 
-public sealed class DjinniKeywordFeed(string keyword) : IJobSource
+public sealed class DjinniKeywordFeed(string keyword) : IRssFeedSource
 {
  public string Name=>"djinni-rss-"+keyword;
  public Uri Home=>new("https://djinni.co/");
@@ -25,8 +25,8 @@ public sealed class DjinniKeywordFeed(string keyword) : IJobSource
  public string ListingUrl(int page)=>page==0
     ? "https://djinni.co/jobs/rss/?employment=remote&keywords="+Uri.EscapeDataString(keyword)
     : throw new NotSupportedException("Djinni RSS does not expose complete paging");
- public IReadOnlyList<JobRef> ParseListings(string payload)=>
-  new DjinniSource().ParseListings(payload).Select(x=>x with {Source="djinni"}).ToArray();
+ public IReadOnlyList<JobRef> ParseListings(string payload)=>ParseFeed(payload).Jobs;
+ public RssFeedPage ParseFeed(string payload)=>new DjinniSource().ParseFeed(payload);
 }
 
 public static class FeedVariants
