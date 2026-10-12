@@ -26,6 +26,15 @@ Prior DOU and Djinni adapters consumed one capped RSS view each, potentially los
 
 See [DEPLOY_DOCKER.md](DEPLOY_DOCKER.md). Production scans need an always-running user's computer or server. GitHub Actions only tests the container build, database connection and CLI; it is NOT a persistent collection server.
 
+## Phase 26 — item-level RSS reference accounting
+
+The four default/supplemental DOU and Djinni adapters now record the number
+of original RSS items, unusable link/title entries, and repeated canonical
+URLs inside the same feed. Any discarded entry is visible as a source
+warning. An empty RSS remains unverified, not a confirmed zero-vacancy
+query; fetch/parse failures retain unknown counts. See the
+[Phase 26 RSS audit](PHASE26_RSS_REFERENCE_AUDIT.md).
+
 ## Remaining limitations
 
 - Full pagination of DOU and Djinni search listings is not covered by RSS.
