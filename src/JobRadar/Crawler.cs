@@ -30,6 +30,7 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
     error="Robota full-text disabled after observed HTTP 403; only listing/preview coverage available";
    }
    bool reconciled=false, overlapReported=false, totalDriftReported=false;
+   bool rssPageParsed=false;
    var seen=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
    int maxPages=source.IsSinglePageFeed?1:Math.Max(1,options.MaxPagesPerSource);
    progress?.Invoke($"{label}: START, max pages={maxPages}");
@@ -55,6 +56,7 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
      if(source is IRssFeedSource rssSource)
      {
       var feed=rssSource.ParseFeed(payload);
+      rssPageParsed=true;
       listings=feed.Jobs;
       rawRecords+=feed.RawItems;
       droppedRecords+=feed.DiscardedItems;
@@ -242,8 +244,8 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
      reconciled?"QUERY_RECONCILED":"UNVERIFIED_COVERAGE";
    summaries.Add(new SourceResult(source.Name,pages,references,details,failedDetails,total,status,error,
      previousRefs>0?previousRefs:null,warning,
-     source is RobotaApiSource or IRssFeedSource?rawRecords:null,
-     source is RobotaApiSource or IRssFeedSource?droppedRecords:null,cachedDetails));
+     source is RobotaApiSource || rssPageParsed?rawRecords:null,
+     source is RobotaApiSource || rssPageParsed?droppedRecords:null,cachedDetails));
    progress?.Invoke($"{label}: FINISHED status={status}, pages={pages}, found={references}, full={details}, cached={cachedDetails}, failed={failedDetails}"+
      (source is RobotaApiSource && !options.EnabledRobotaDetails?", Robota full text paused (HTTP 403)":""));
   }
