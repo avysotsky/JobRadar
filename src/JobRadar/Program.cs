@@ -139,6 +139,24 @@ if(args.Contains("--freelancer-once"))
 var cs=Environment.GetEnvironmentVariable("JOBRADAR_DB") ?? options.ConnectionString;
 var storage=new Storage(cs);
 try{await storage.Initialize(CancellationToken.None);}catch(Exception e){Console.Error.WriteLine("Database unavailable: "+e.Message);return 3;}
+if(args.Contains("--coverage-review"))
+{
+ // The last 20 persisted reports are the only evidence considered. This
+ // operator command performs no HTTP scans and never changes vacancy data.
+ try
+ {
+  var runs=await storage.ReadRecentCrawlReportsAsync(20,CancellationToken.None);
+  var review=CoverageReview.Analyze(runs,DateTimeOffset.UtcNow);
+  Console.WriteLine(JsonSerializer.Serialize(review,
+   new JsonSerializerOptions{WriteIndented=true}));
+  return review.ReportsExamined==0||review.Sources.Count==0?4:0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Coverage review unavailable: "+e.GetType().Name);
+  return 4;
+ }
+}
 if(args.Contains("--robota-coverage"))
 {
  // Offline/provider-read-only diagnostics over the most recent stored crawl.
