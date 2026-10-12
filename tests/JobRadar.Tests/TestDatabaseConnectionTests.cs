@@ -41,6 +41,38 @@ public sealed class TestDatabaseConnectionTests
    TestDatabaseConnection.ReadFromSources("relative/connection",null));
  }
 
+ [Theory]
+ [InlineData("")]
+ [InlineData("  ")]
+ public void ConfiguredButEmptySecretFilePathFailsClosed(string path)
+ {
+  Assert.Throws<InvalidOperationException>(()=>
+   TestDatabaseConnection.ReadFromSources(path,null));
+ }
+
+ [Fact]
+ public void MissingSecretFileFailsClosed()
+ {
+  var path=Path.Combine(Path.GetTempPath(),
+   "jobradar-secret-nonexistent-"+Guid.NewGuid().ToString("N"));
+  Assert.Throws<InvalidOperationException>(()=>
+   TestDatabaseConnection.ReadFromSources(path,null));
+ }
+
+ [Fact]
+ public void DirectoryCannotBeUsedAsSecretFile()
+ {
+  var path=Path.Combine(Path.GetTempPath(),
+   "jobradar-secret-dir-"+Guid.NewGuid().ToString("N"));
+  Directory.CreateDirectory(path);
+  try
+  {
+   Assert.Throws<InvalidOperationException>(()=>
+    TestDatabaseConnection.ReadFromSources(path,null));
+  }
+  finally{Directory.Delete(path);}
+ }
+
  [Fact]
  public void RejectsOversizedSecret()
  {
