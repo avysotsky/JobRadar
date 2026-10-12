@@ -36,7 +36,7 @@ public sealed class StatusEvidenceTests
  [Fact]
  public async Task ProviderStatusHistoryRecordsClosedThenUnknownWithoutDeclaringOpen()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var storage=new Storage(cs);
   await storage.Initialize(CancellationToken.None);
@@ -84,7 +84,7 @@ FROM job_status_checks WHERE source=@s AND url=@u
  [Fact]
  public async Task LateArrivingOldClosureDoesNotOverwriteNewerUnknownObservation()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var storage=new Storage(cs);
   await storage.Initialize(CancellationToken.None);
@@ -110,7 +110,7 @@ FROM job_status_checks WHERE source=@s AND url=@u
  [Fact]
  public async Task RobotaCompanyDescriptionDoesNotInventAStatusCheck()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var storage=new Storage(cs);
   await storage.Initialize(CancellationToken.None);
