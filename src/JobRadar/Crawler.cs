@@ -52,7 +52,28 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
     IReadOnlyList<JobRef> listings;
     try
     {
-     listings=source.ParseListings(payload);
+     if(source is IRssFeedSource rssSource)
+     {
+      var feed=rssSource.ParseFeed(payload);
+      listings=feed.Jobs;
+      rawRecords+=feed.RawItems;
+      droppedRecords+=feed.DiscardedItems;
+      // A capped RSS feed is already PARTIAL, but rejected/duplicate
+      // items also need their own durable source-level diagnostic.
+      if(feed.DiscardedItems>0)
+      {
+       var loss=$"RSS_REFERENCE_LOSS: unusable={feed.UnusableItems}, duplicates={feed.DuplicateItems}";
+       error=string.IsNullOrWhiteSpace(error)?loss:error+"; "+loss;
+       uncertain=true;
+      }
+      if(feed.RawItems==0)
+      {
+       const string empty="RSS_EMPTY_UNVERIFIED: zero feed items is not verified zero vacancies";
+       error=string.IsNullOrWhiteSpace(error)?empty:error+"; "+empty;
+       uncertain=true;
+      }
+     }
+     else listings=source.ParseListings(payload);
      if(source is RobotaApiSource robotaSource)
      {
       var raw=robotaSource.RawDocumentCount(payload);
@@ -221,7 +242,8 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
      reconciled?"QUERY_RECONCILED":"UNVERIFIED_COVERAGE";
    summaries.Add(new SourceResult(source.Name,pages,references,details,failedDetails,total,status,error,
      previousRefs>0?previousRefs:null,warning,
-     source is RobotaApiSource?rawRecords:null,source is RobotaApiSource?droppedRecords:null,cachedDetails));
+     source is RobotaApiSource or IRssFeedSource?rawRecords:null,
+     source is RobotaApiSource or IRssFeedSource?droppedRecords:null,cachedDetails));
    progress?.Invoke($"{label}: FINISHED status={status}, pages={pages}, found={references}, full={details}, cached={cachedDetails}, failed={failedDetails}"+
      (source is RobotaApiSource && !options.EnabledRobotaDetails?", Robota full text paused (HTTP 403)":""));
   }
