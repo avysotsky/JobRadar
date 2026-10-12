@@ -11,7 +11,7 @@ public sealed class CrawlCoverageTests
  [Fact]
  public async Task ReconcilesTwoQueriesWithoutDuplicatingTheSameRobotaVacancy()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var jobId=Random.Shared.Next(10000000,99999999);
   var companyId=Random.Shared.Next(100000,999999);

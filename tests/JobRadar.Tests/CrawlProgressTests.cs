@@ -10,7 +10,7 @@ public sealed class CrawlProgressTests
  [Fact]
  public async Task EmitsSourcePageDetailAndCompletionProgressDuringDatabaseBackedCrawl()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var id=Random.Shared.Next(10000000,99999999);
   var company=Random.Shared.Next(900000,999999);

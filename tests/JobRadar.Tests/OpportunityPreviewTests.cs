@@ -222,7 +222,7 @@ public sealed class OpportunityPreviewTests
  [Fact]
  public async Task PostgreSqlDiscoveryEventsAreAtomicAndAdditive()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var storage=new Storage(cs);
   await storage.Initialize(CancellationToken.None);
@@ -250,7 +250,7 @@ WHERE source=@s AND url=@u AND query_name IN ('C#','backend')
  [Fact]
  public async Task PostgreSqlLatestCrawlCoverageRetainsProviderWarnings()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var storage=new Storage(cs);
   await storage.Initialize(CancellationToken.None);

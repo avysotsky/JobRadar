@@ -31,7 +31,7 @@ public sealed class JoobleTests
  }
  [Fact] public async Task ReserveQuotaPersistsAndRejectsOverspendAcrossRestarts()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var store=new Storage(cs);
   await store.Initialize(CancellationToken.None);

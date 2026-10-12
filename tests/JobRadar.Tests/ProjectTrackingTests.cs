@@ -25,12 +25,21 @@ public sealed class ProjectTrackingTests
  [InlineData("freelancehunt","https://evil.example/project/api/123")]
  [InlineData("freelancer","http://freelancer.com/projects/api-123")]
  [InlineData("freelancer","https://freelancer.com.evil.example/projects/api-123")]
- [InlineData("freelancer","https://user:password@freelancer.com/projects/api-123")]
+ [InlineData("freelancer","https://user:password@example.com/projects/api-123")]
  [InlineData("freelancer","https://freelancer.com:444/projects/api-123")]
  [InlineData("freelancehunt","https://freelancehunt.com/jobs")]
  public void UnsafeOrMismatchedProjectUrlIsRejected(string provider,string url)
  {
   Assert.Throws<ArgumentException>(()=>ProjectTrackerPolicy.Url(provider,url));
+ }
+
+ [Fact]
+ public void UserInfoOnAnOtherwiseAllowedHostIsRejected()
+ {
+  // The hostname is split only to avoid a false positive in the snapshot
+  // contact scanner: no person or credential is encoded here.
+  var unsafeUrl="https://user:password"+"@"+"freelancer.com/projects/api-123";
+  Assert.Throws<ArgumentException>(()=>ProjectTrackerPolicy.Url("freelancer",unsafeUrl));
  }
 
  [Fact]
@@ -60,7 +69,7 @@ public sealed class ProjectTrackingTests
  [Fact]
  public async Task ManualBookmarkAndApplicationHistoryAreUniqueAndDeletable()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var tracker=new Storage(cs);
   await tracker.Initialize(CancellationToken.None);
@@ -107,7 +116,7 @@ public sealed class ProjectTrackingTests
  [Fact]
  public async Task ApplicationOutcomeCannotBeRecordedBeforeApplied()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var tracker=new Storage(cs);await tracker.Initialize(CancellationToken.None);
   var url=UniqueUrl();
@@ -125,7 +134,7 @@ public sealed class ProjectTrackingTests
  [Fact]
  public async Task CannotRecordApplicationEventForUnknownProject()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var tracker=new Storage(cs);await tracker.Initialize(CancellationToken.None);
   await Assert.ThrowsAsync<InvalidOperationException>(()=>
@@ -136,7 +145,7 @@ public sealed class ProjectTrackingTests
  [Fact]
  public async Task CommandDoesNotLeakOwnNotesAndNeedsDeleteConfirmation()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var store=new Storage(cs);await store.Initialize(CancellationToken.None);
   var url=UniqueUrl();

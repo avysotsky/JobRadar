@@ -14,7 +14,7 @@ public sealed class PendingRetryTests
  [Fact]
  public async Task RecoversVacancyNoLongerPresentInRssAndClearsError()
  {
-  string? cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  string? cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var storage=new Storage(cs);
   await storage.Initialize(CancellationToken.None);
@@ -42,7 +42,7 @@ public sealed class PendingRetryTests
  [Fact]
  public async Task Http403RemainsVisibleButIsNotRetried()
  {
-  string? cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  string? cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var storage=new Storage(cs);
   await storage.Initialize(CancellationToken.None);
@@ -65,7 +65,7 @@ public sealed class PendingRetryTests
  [Fact]
  public async Task RetryBudgetExhaustionIsReportedNotDeleted()
  {
-  string? cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  string? cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var storage=new Storage(cs);
   await storage.Initialize(CancellationToken.None);

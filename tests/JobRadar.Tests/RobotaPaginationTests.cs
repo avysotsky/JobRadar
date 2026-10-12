@@ -9,7 +9,7 @@ public sealed class RobotaPaginationTests
  [Fact]
  public async Task ThreeDistinctPagesReconcileReportedTotal()
  {
-  string? cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  string? cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrEmpty(cs))return;
   var company=Random.Shared.Next(900000,999999);
   var start=Random.Shared.Next(5000000,8000000);
@@ -54,7 +54,7 @@ public sealed class RobotaPaginationTests
  [Fact]
  public async Task DuplicatedPageIsPartialNotSuccess()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrEmpty(cs))return;
   var company=Random.Shared.Next(900000,999999);
   var id=Random.Shared.Next(7000000,8000000);
