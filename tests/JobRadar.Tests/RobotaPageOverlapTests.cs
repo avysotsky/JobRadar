@@ -8,10 +8,11 @@ namespace JobRadar.Tests;
 public sealed class RobotaPageOverlapTests
 {
  [Theory]
- [InlineData(false,3)]
- [InlineData(true,2)]
+ [InlineData(false,3,true)]
+ [InlineData(true,2,true)]
+ [InlineData(false,3,false)]
  public async Task RepeatedIdsAcrossPagesRemainPartialEvenWhenTotalIsStable(
-  bool repeatWholePage,int expectedUnique)
+  bool repeatWholePage,int expectedUnique,bool enableDetails)
  {
   var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
@@ -53,7 +54,7 @@ public sealed class RobotaPageOverlapTests
   await storage.Initialize(CancellationToken.None);
   var source=new RobotaApiSource("overlap-"+Guid.NewGuid().ToString("N"));
   var report=await new Crawler(new HttpFetcher(client,0),storage,
-    new RadarOptions{MaxPagesPerSource=2,EnabledRobotaDetails=true})
+    new RadarOptions{MaxPagesPerSource=2,EnabledRobotaDetails=enableDetails})
    .RunAsync([source],CancellationToken.None);
   var result=Assert.Single(report.Sources);
   Assert.Equal("PARTIAL",result.Status);
@@ -61,11 +62,13 @@ public sealed class RobotaPageOverlapTests
   Assert.Equal(2,result.PagesFetched);
   Assert.Equal(3,result.ReportedTotal);
   Assert.Equal(expectedUnique,result.ReferencesFound);
-  Assert.Equal(expectedUnique,result.DetailsFetched);
+  Assert.Equal(enableDetails?expectedUnique:0,result.DetailsFetched);
+  if(!enableDetails)
+   Assert.Contains("full-text disabled",result.Error!,StringComparison.OrdinalIgnoreCase);
   Assert.Equal(4,result.RawRecords);
   Assert.Equal(0,result.DroppedRecords);
   Assert.Equal(2,searchCalls);
-  Assert.Equal(1,companyCalls);
+  Assert.Equal(enableDetails?1:0,companyCalls);
  }
 
  [Fact]
