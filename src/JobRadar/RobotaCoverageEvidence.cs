@@ -6,7 +6,7 @@ namespace JobRadar;
 /// </summary>
 public sealed record RobotaCoverageEvidence(
  string Source,string Status,int PagesFetched,int UniqueReferences,
- int RawRecords,int DroppedWithinPages,int? ReportedTotal,
+ int? RawRecords,int? DroppedWithinPages,int? ReportedTotal,
  int? UnobservedFromReportedTotal,IReadOnlyList<string> Signals)
 {
  public static RobotaCoverageEvidence From(SourceResult result)
@@ -15,15 +15,15 @@ public sealed record RobotaCoverageEvidence(
    throw new ArgumentException("Expected a Robota API query",nameof(result));
   var signals=new SortedSet<string>(StringComparer.Ordinal);
   var error=result.Error??"";
-  var raw=result.RawRecords??0;
-  var dropped=result.DroppedRecords??0;
+  var raw=result.RawRecords;
+  var dropped=result.DroppedRecords;
   var gap=result.ReportedTotal.HasValue
    ?Math.Max(0,result.ReportedTotal.Value-result.ReferencesFound)
    :(int?)null;
 
   // Zero is confirmed only when the provider explicitly declared total=0,
   // returned no raw documents, and this query was reconciled.
-  if(result.ReportedTotal==0 && raw==0 &&
+  if(result.ReportedTotal==0 && result.RawRecords==0 &&
      result.ReferencesFound==0 && result.Status=="QUERY_RECONCILED")
    signals.Add(RobotaCoverageSignals.VerifiedZero);
   if(error.Contains(RobotaCoverageSignals.FetchFailed,StringComparison.Ordinal))
