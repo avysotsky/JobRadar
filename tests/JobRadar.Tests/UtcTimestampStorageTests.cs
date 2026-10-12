@@ -15,7 +15,7 @@ public sealed class UtcTimestampStorageTests
  [InlineData(-5)]
  public async Task NonUtcSourceDatesRoundTripAsTheSameUtcInstant(int offsetHours)
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
 
   var storage=new Storage(cs);
