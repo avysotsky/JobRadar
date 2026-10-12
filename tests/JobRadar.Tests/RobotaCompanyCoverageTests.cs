@@ -38,7 +38,7 @@ public sealed class RobotaCompanyCoverageTests
  [Fact]
  public async Task RawRecordDropsMarkSearchPartialEvenWhenHttpSucceeds()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var id=Random.Shared.Next(9000000,9999999);
   var company=Random.Shared.Next(900000,999999);
