@@ -21,7 +21,7 @@ public sealed class CoverageDriftTests
  [Fact]
  public async Task PreviousSourceCountsReadFromPersistedCrawlRuns()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var storage=new Storage(cs);await storage.Initialize(CancellationToken.None);
   var source="test-drift-"+Guid.NewGuid().ToString("N");
