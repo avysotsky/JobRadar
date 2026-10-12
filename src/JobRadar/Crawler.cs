@@ -95,10 +95,19 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
      uncertain=true;error="Unexpected empty vacancy identifiers from nonempty or unverified search";break;
     }
     var fresh=listings.Where(x=>seen.Add(x.Url)).ToList();
+    // A stable advertised total is insufficient when a later search page
+    // repeats an earlier vacancy: shifting pages can conceal unseen IDs.
+    // Preserve each fresh discovery, but never certify Robota query coverage.
+    if(source is RobotaApiSource && page>0 && fresh.Count<listings.Count)
+    {
+     uncertain=true;
+     error??="Robota API search pages overlap: repeated vacancy IDs across pages";
+    }
     if(fresh.Count==0)
     {
-     if(total.HasValue && references>=total.Value)reconciled=true;
-     else uncertain=true; // identical page could be a paging bug
+     if(source is not RobotaApiSource && total.HasValue && references>=total.Value)
+      reconciled=true;
+     else uncertain=true; // repeated page is not proof of complete pagination
      break;
     }
     foreach(var job in fresh)
