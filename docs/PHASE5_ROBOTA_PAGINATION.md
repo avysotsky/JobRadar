@@ -24,6 +24,26 @@ dotnet test tests/JobRadar.Tests/JobRadar.Tests.csproj -c Release
 
 The probe is deliberately bounded at three public result-page requests; it neither fetches every result nor verifies job detail text. PostgreSQL fixture tests validate normal three-page reconciliation, overlapping pages, and lost IDs.
 
+## Phase 24 — overlapping pages (offline-verified behavior)
+
+An unchanged reported `total` does not prove complete pagination when
+the API repeats a vacancy ID on a later page. An offset-based search can shift
+as listings are added or removed, producing overlapping pages that may also
+hide unseen jobs.
+
+The crawler now marks such Robota queries `PARTIAL` and records an explicit
+page-overlap error, even when the number of unique IDs equals the reported
+total. It still stores all newly discovered IDs and preserves per-query
+provenance; in-page duplicates remain accounted for separately by the existing
+RawRecords/DroppedRecords metrics. Cross-query reappearance of the same
+vacancy is normal and **must not** be interpreted as overlapping pages.
+
+The new synthetic PostgreSQL integration cases cover partial overlap,
+a fully repeated page, normal cross-query repetition, and detection when
+full-text retrieval is intentionally disabled after HTTP 403. Page overlap
+diagnostics are retained alongside the full-text restriction; neither
+signal establishes that real provider paging is exhaustive.
+
 ## Remaining gaps
 
 - MaxPagesPerSource defaults to 12, so broad queries are deliberately incomplete.

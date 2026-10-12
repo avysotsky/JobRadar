@@ -29,7 +29,7 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
     uncertain=true;
     error="Robota full-text disabled after observed HTTP 403; only listing/preview coverage available";
    }
-   bool reconciled=false;
+   bool reconciled=false, overlapReported=false;
    var seen=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
    int maxPages=source.IsSinglePageFeed?1:Math.Max(1,options.MaxPagesPerSource);
    progress?.Invoke($"{label}: START, max pages={maxPages}");
@@ -95,10 +95,25 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
      uncertain=true;error="Unexpected empty vacancy identifiers from nonempty or unverified search";break;
     }
     var fresh=listings.Where(x=>seen.Add(x.Url)).ToList();
+    // A stable advertised total is insufficient when a later search page
+    // repeats an earlier vacancy: shifting pages can conceal unseen IDs.
+    // Preserve each fresh discovery, but never certify Robota query coverage.
+    if(source is RobotaApiSource && page>0 && fresh.Count<listings.Count)
+    {
+     uncertain=true;
+     if(!overlapReported)
+     {
+      overlapReported=true;
+      // Keep prior diagnostics (e.g. intentionally paused HTTP 403 details).
+      const string overlap="Robota API search pages overlap: repeated vacancy IDs across pages";
+      error=string.IsNullOrWhiteSpace(error)?overlap:error+"; "+overlap;
+     }
+    }
     if(fresh.Count==0)
     {
-     if(total.HasValue && references>=total.Value)reconciled=true;
-     else uncertain=true; // identical page could be a paging bug
+     if(source is not RobotaApiSource && total.HasValue && references>=total.Value)
+      reconciled=true;
+     else uncertain=true; // repeated page is not proof of complete pagination
      break;
     }
     foreach(var job in fresh)
