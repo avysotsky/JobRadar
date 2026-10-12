@@ -7,7 +7,7 @@ public sealed class ExportTests
 {
  [Fact]public async Task WritesFullDescriptionsAndProvenanceWithExplicitCompletenessFlag()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   var storage=new Storage(cs);await storage.Initialize(CancellationToken.None);
   string unique="export-"+Guid.NewGuid().ToString("N");
@@ -34,7 +34,7 @@ public sealed class ExportTests
  }
  [Fact]public async Task RejectsUnboundedExport()
  {
-  var cs=Environment.GetEnvironmentVariable("JOBRADAR_TEST_DB");
+  var cs=TestDatabaseConnection.Resolve();
   if(string.IsNullOrWhiteSpace(cs))return;
   await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
     ()=>new Storage(cs).ExportJobsJsonlAsync(new StringWriter(),50001,CancellationToken.None));
