@@ -91,8 +91,17 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
     // Only accept empty results as legitimate when the source actually reported zero.
     if(listings.Count==0)
     {
-     if(page==0 && total==0){reconciled=true;break;}
-     uncertain=true;error="Unexpected empty vacancy identifiers from nonempty or unverified search";break;
+     // A true zero-result search needs both an explicit zero total and an
+     // empty provider array. Invalid raw records are not evidence of zero.
+     if(page==0 && total==0 &&
+        (source is not RobotaApiSource || rawRecords==0))
+     {
+      reconciled=true;
+      break;
+     }
+     uncertain=true;
+     error="Unexpected empty vacancy identifiers from nonempty or unverified search";
+     break;
     }
     var fresh=listings.Where(x=>seen.Add(x.Url)).ToList();
     // A stable advertised total is insufficient when a later search page
