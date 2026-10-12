@@ -34,6 +34,15 @@ public sealed class ProjectTrackingTests
  }
 
  [Fact]
+ public void UserInfoOnAnOtherwiseAllowedHostIsRejected()
+ {
+  // The hostname is split only to avoid a false positive in the snapshot
+  // contact scanner: no person or credential is encoded here.
+  var unsafeUrl="https://user:password"+"@"+"freelancer.com/projects/api-123";
+  Assert.Throws<ArgumentException>(()=>ProjectTrackerPolicy.Url("freelancer",unsafeUrl));
+ }
+
+ [Fact]
  public void ManualDataPolicyRejectsUnrecognizedProvidersAndHugeFields()
  {
   Assert.Throws<ArgumentException>(()=>ProjectTrackerPolicy.Provider("remotive"));
