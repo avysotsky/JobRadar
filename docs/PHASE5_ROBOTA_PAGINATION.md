@@ -39,8 +39,10 @@ RawRecords/DroppedRecords metrics. Cross-query reappearance of the same
 vacancy is normal and **must not** be interpreted as overlapping pages.
 
 The new synthetic PostgreSQL integration cases cover partial overlap,
-a fully repeated page and normal cross-query repetition; they do not
-establish that real provider paging is exhaustive.
+a fully repeated page, normal cross-query repetition, and detection when
+full-text retrieval is intentionally disabled after HTTP 403. Page overlap
+diagnostics are retained alongside the full-text restriction; neither
+signal establishes that real provider paging is exhaustive.
 
 ## Remaining gaps
 
