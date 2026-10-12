@@ -29,7 +29,7 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
     uncertain=true;
     error="Robota full-text disabled after observed HTTP 403; only listing/preview coverage available";
    }
-   bool reconciled=false;
+   bool reconciled=false, overlapReported=false;
    var seen=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
    int maxPages=source.IsSinglePageFeed?1:Math.Max(1,options.MaxPagesPerSource);
    progress?.Invoke($"{label}: START, max pages={maxPages}");
@@ -101,7 +101,13 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
     if(source is RobotaApiSource && page>0 && fresh.Count<listings.Count)
     {
      uncertain=true;
-     error??="Robota API search pages overlap: repeated vacancy IDs across pages";
+     if(!overlapReported)
+     {
+      overlapReported=true;
+      // Keep prior diagnostics (e.g. intentionally paused HTTP 403 details).
+      const string overlap="Robota API search pages overlap: repeated vacancy IDs across pages";
+      error=string.IsNullOrWhiteSpace(error)?overlap:error+"; "+overlap;
+     }
     }
     if(fresh.Count==0)
     {
