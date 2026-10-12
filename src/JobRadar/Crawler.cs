@@ -29,7 +29,7 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
     uncertain=true;
     error="Robota full-text disabled after observed HTTP 403; only listing/preview coverage available";
    }
-   bool reconciled=false, overlapReported=false;
+   bool reconciled=false, overlapReported=false, totalDriftReported=false;
    var seen=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
    int maxPages=source.IsSinglePageFeed?1:Math.Max(1,options.MaxPagesPerSource);
    progress?.Invoke($"{label}: START, max pages={maxPages}");
@@ -44,7 +44,9 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
     catch(Exception e) when(!ct.IsCancellationRequested)
     {
      await storage.SaveError(source.Name,url,e.Message,ct);
-     error=e.Message;uncertain=true;break;
+     error=source is RobotaApiSource
+      ?RobotaCoverageSignals.FetchFailed+": "+e.Message:e.Message;
+     uncertain=true;break;
     }
     pages++;
     IReadOnlyList<JobRef> listings;
@@ -73,11 +75,17 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
        // (or disappears) between pages. Retain the first-page total as the
        // reconciliation baseline, but never advertise a complete query.
        uncertain=true;
-       error??=pageTotal is null
-        ?"Robota API reported total missing on subsequent page"
-        :total is null
-         ?"Robota API reported total first appeared on subsequent page"
-         :"Robota API reported total changed between pages";
+       if(!totalDriftReported)
+       {
+        totalDriftReported=true;
+        var message=pageTotal is null
+         ?"Robota API reported total missing on subsequent page"
+         :total is null
+          ?"Robota API reported total first appeared on subsequent page"
+          :"Robota API reported total changed between pages";
+        var drift=RobotaCoverageSignals.TotalDrift+": "+message;
+        error=string.IsNullOrWhiteSpace(error)?drift:error+"; "+drift;
+       }
       }
       else if(source is not RobotaApiSource)total??=pageTotal;
      }
@@ -85,14 +93,39 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
     catch(Exception e) when(!ct.IsCancellationRequested)
     {
      await storage.SaveError(source.Name,url,"Parse failure: "+e.Message,ct);
-     error=e.Message;uncertain=true;break;
+     error=source is RobotaApiSource
+      ?RobotaCoverageSignals.ParseFailed+": "+e.Message:e.Message;
+     uncertain=true;break;
     }
     progress?.Invoke($"{label}: page {page+1} returned {listings.Count} listings; provider total={total?.ToString()??"unknown"}");
     // Only accept empty results as legitimate when the source actually reported zero.
     if(listings.Count==0)
     {
-     if(page==0 && total==0){reconciled=true;break;}
-     uncertain=true;error="Unexpected empty vacancy identifiers from nonempty or unverified search";break;
+     // A true zero-result search needs both an explicit zero total and an
+     // empty provider array. Invalid raw records are not evidence of zero.
+     if(page==0 && total==0 &&
+        (source is not RobotaApiSource || rawRecords==0))
+     {
+      reconciled=true;
+      // No vacancy requires full-text retrieval. A provider-confirmed zero
+      // cannot fail solely because Robota detail fetching is paused.
+      if(source is RobotaApiSource && !options.EnabledRobotaDetails)
+      {
+       uncertain=false;
+       error=null;
+      }
+      break;
+     }
+     uncertain=true;
+     var emptyMessage="Unexpected empty vacancy identifiers from nonempty or unverified search";
+     if(source is RobotaApiSource)
+     {
+      var signal=page==0?RobotaCoverageSignals.EmptyUnverified:
+       RobotaCoverageSignals.EmptyBeforeTotal;
+      emptyMessage=signal+": "+emptyMessage;
+     }
+     error=string.IsNullOrWhiteSpace(error)?emptyMessage:error+"; "+emptyMessage;
+     break;
     }
     var fresh=listings.Where(x=>seen.Add(x.Url)).ToList();
     // A stable advertised total is insufficient when a later search page

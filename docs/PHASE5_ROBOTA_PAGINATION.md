@@ -44,6 +44,13 @@ full-text retrieval is intentionally disabled after HTTP 403. Page overlap
 diagnostics are retained alongside the full-text restriction; neither
 signal establishes that real provider paging is exhaustive.
 
+## Phase 25 — read-only structured coverage audit
+
+`--robota-coverage` derives separate zero/empty/fetch/parse/gap/overlap
+signals from the last persisted crawl, with no provider HTTP requests.
+See [Phase 25 Robota coverage](PHASE25_ROBOTA_COVERAGE.md) for exact
+semantics, limitations and the PostgreSQL-backed offline test cases.
+
 ## Remaining gaps
 
 - MaxPagesPerSource defaults to 12, so broad queries are deliberately incomplete.

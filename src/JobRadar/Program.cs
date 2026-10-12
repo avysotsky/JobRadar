@@ -139,6 +139,34 @@ if(args.Contains("--freelancer-once"))
 var cs=Environment.GetEnvironmentVariable("JOBRADAR_DB") ?? options.ConnectionString;
 var storage=new Storage(cs);
 try{await storage.Initialize(CancellationToken.None);}catch(Exception e){Console.Error.WriteLine("Database unavailable: "+e.Message);return 3;}
+if(args.Contains("--robota-coverage"))
+{
+ // Offline/provider-read-only diagnostics over the most recent stored crawl.
+ // No source HTTP requests or external credentials are used by this command.
+ try
+ {
+  var latest=await storage.ReadLatestCrawlReportAsync(CancellationToken.None);
+  if(latest is null)
+  {
+   Console.Error.WriteLine("No persisted crawl report to analyze");
+   return 4;
+  }
+  var evidence=latest.Sources
+   .Where(s=>s.Source.StartsWith("robota-api-",StringComparison.OrdinalIgnoreCase))
+   .Select(RobotaCoverageEvidence.From)
+   .OrderBy(s=>s.Source,StringComparer.OrdinalIgnoreCase)
+   .ToArray();
+  Console.WriteLine(JsonSerializer.Serialize(new
+   {latest.StartedAt,latest.EndedAt,Sources=evidence},
+   new JsonSerializerOptions{WriteIndented=true}));
+  return evidence.Length==0?4:0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Robota coverage report unavailable: "+e.GetType().Name);
+  return 4;
+ }
+}
 if(args.Any(x=>x.StartsWith("--project-track-",StringComparison.OrdinalIgnoreCase)))
  return await ProjectTrackerCli.RunAsync(storage,args,Console.Out,Console.Error,CancellationToken.None);
 if(args.Contains("--opportunities-preview"))
