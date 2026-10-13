@@ -114,6 +114,8 @@ public static class VacancyTriage
   if(SpokenEnglish.IsMatch(all))warnings.Add("Упомянут разговорный английский");
   if(Regex.IsMatch(all,@"\b(?:wpf|kubernetes|aws|azure)\b",Flags))
    warnings.Add("Встречаются WPF / cloud / Kubernetes — проверить требования");
+  if(job.Source=="wwr")
+   warnings.Add("WWR RSS: разрешение работать из Украины и актуальность объявления не подтверждены; отклик через WWR");
   if(!job.HasFullText)warnings.Add("Полный текст не получен: оценка только по анонсу");
   if(!job.HasFullText && !Net.IsMatch(all))warnings.Add("Короткий анонс без .NET не является доказательством нерелевантности");
   var verifiedClosure=job.IsOpen==false &&
