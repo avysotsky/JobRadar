@@ -377,7 +377,23 @@ async Task<int> Run(CancellationToken ct)
  try
  {
   ShowProgress($"Crawl START, configured queries={sources.Count}");
-  var report=await crawler.RunAsync(sources,ct);
+  Func<CancellationToken,Task<SourceResult>>? remotiveDiscovery=null;
+  if(options.EnabledRemotive)
+  {
+   remotiveDiscovery=async token =>
+   {
+    // Independent client: never forward the request to a redirect host.
+    using var handler=new HttpClientHandler{AllowAutoRedirect=false};
+    using var remotiveClient=new HttpClient(handler)
+     {Timeout=TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds,5,60))};
+    remotiveClient.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
+    var result=await RemotiveCoreRunner.RunAsync(remotiveClient,storage,
+     DateTimeOffset.UtcNow,token);
+    ShowProgress($"Remotive: {result.Status}, found={result.ReferencesFound}");
+    return result;
+   };
+  }
+  var report=await crawler.RunAsync(sources,ct,remotiveDiscovery);
   Directory.CreateDirectory(options.OutputDirectory);
   var file=Path.Combine(options.OutputDirectory,$"crawl-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}.json");
   var json=JsonSerializer.Serialize(report,new JsonSerializerOptions{WriteIndented=true});
