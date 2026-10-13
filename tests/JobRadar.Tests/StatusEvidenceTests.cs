@@ -23,6 +23,7 @@ public sealed class StatusEvidenceTests
  [InlineData("<div class='vacancy-status'>Вакансія неактивна</div><article>ASP.NET Core</article>","html:explicit-closed-banner")]
  [InlineData("<main><h1>Middle .NET — вакансія закрита</h1><article>ASP.NET Core</article></main>","html:explicit-closed-heading")]
  [InlineData("<main><h1>Middle .NET — вакансия неактивна</h1><article>ASP.NET Core</article></main>","html:explicit-closed-heading")]
+ [InlineData("<html><head><title>Junior .NET C# Developer (вакансія неактивна)</title></head><body><article>ASP.NET Core</article></body></html>","html:explicit-closed-title")]
  public void ExplicitInactiveHeadingOrBannerIsClosed(string html,string evidence)
  {
   var result=VacancyStatusEvidence.FromProviderHtml(html);
