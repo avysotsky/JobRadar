@@ -19,9 +19,28 @@ public sealed class StatusEvidenceTests
  }
 
  [Theory]
+ [InlineData("<main><h1>Junior .NET C# Developer (вакансія неактивна)</h1><article>ASP.NET Core</article></main>","html:explicit-closed-heading")]
+ [InlineData("<div class='vacancy-status'>Вакансія неактивна</div><article>ASP.NET Core</article>","html:explicit-closed-banner")]
+ [InlineData("<main><h1>Middle .NET — вакансія закрита</h1><article>ASP.NET Core</article></main>","html:explicit-closed-heading")]
+ [InlineData("<main><h1>Middle .NET — вакансия неактивна</h1><article>ASP.NET Core</article></main>","html:explicit-closed-heading")]
+ public void ExplicitInactiveHeadingOrBannerIsClosed(string html,string evidence)
+ {
+  var result=VacancyStatusEvidence.FromProviderHtml(html);
+  Assert.False(result.IsOpen);
+  Assert.Equal(evidence,result.EvidenceCode);
+  Assert.Equal(false,Parsers.OpenStatus(html));
+  var vacancy=new VacancySnapshot("dou","https://jobs.dou.ua/vacancies/1",
+   "Junior .NET C# Developer",null,null,"Remote ASP.NET Core EF Core Web API",
+   true,false,DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,["dou"],
+   DateTimeOffset.UtcNow,evidence);
+  Assert.Equal(FitBucket.Excluded,VacancyTriage.Assess(vacancy).Bucket);
+ }
+
+ [Theory]
  [InlineData("<article><p>The product monitors when a job is closed. Build .NET APIs.</p></article>")]
  [InlineData("<footer>Position is closed</footer><main><article>Build .NET APIs.</article></main>")]
  [InlineData("<main><p>Remote. Build .NET APIs.</p><button>Apply now</button></main>")]
+ [InlineData("<main><h1>Middle .NET Backend</h1><article>Develop tooling that detects when a vacancy is inactive, ASP.NET Core</article></main>")]
  [InlineData("<body>Our backend product must detect when a job is closed, using .NET.</body>")]
  [InlineData("<div role='alert'>Job is open for applications</div><article>Build .NET APIs.</article>")]
  [InlineData("<script type='application/ld+json'>{\"@type\":\"JobPosting\",\"validThrough\":\"2026-01-01\"}</script><article>Build .NET APIs</article>")]
