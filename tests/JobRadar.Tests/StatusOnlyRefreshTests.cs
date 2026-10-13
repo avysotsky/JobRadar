@@ -108,6 +108,49 @@ FROM job_status_checks WHERE source='dou' AND url=@url
  }
 
  [Fact]
+ public async Task OwnerAppliedJobsAreSkippedByDatabaseCandidateSelection()
+ {
+  var cs=TestDatabaseConnection.Resolve();
+  if(string.IsNullOrWhiteSpace(cs))return;
+  var storage=new Storage(cs);
+  await storage.Initialize(CancellationToken.None);
+  var url="https://jobs.dou.ua/vacancies/"+DateTime.UtcNow.Ticks+"/";
+  var job=new JobRef("dou",url,"Middle .NET Backend",null,null);
+  await storage.SaveDiscovered(job,CancellationToken.None);
+  await storage.MarkEmploymentDecisionAsync(url,"Applied",CancellationToken.None);
+  var batch=await storage.ReadStatusRefreshCandidatesAsync(30,12,14,CancellationToken.None);
+  Assert.DoesNotContain(batch,candidate=>candidate.Url==url);
+ }
+
+ [Fact]
+ public async Task ANewUnverifiedObservationClearsOldClosedStatusButKeepsHistoricalEvidence()
+ {
+  var cs=TestDatabaseConnection.Resolve();
+  if(string.IsNullOrWhiteSpace(cs))return;
+  var storage=new Storage(cs);
+  await storage.Initialize(CancellationToken.None);
+  var url="https://djinni.co/jobs/"+DateTime.UtcNow.Ticks+"/";
+  var job=new JobRef("djinni",url,"Middle .NET Backend",null,null);
+  await storage.SaveDiscovered(job,CancellationToken.None);
+  var t1=DateTimeOffset.UtcNow.AddMinutes(-3);
+  var t2=DateTimeOffset.UtcNow;
+  await storage.SaveStatusOnlyAsync(job,
+   new VacancyStatusObservation(false,"html:explicit-closed-banner"),
+   t1,CancellationToken.None);
+  var before=Assert.Single(await storage.ReadVacanciesForTriageAsync(
+   50000,CancellationToken.None),x=>x.Url==url);
+  Assert.False(before.IsOpen);
+  Assert.True(await storage.SaveStatusOnlyAsync(job,
+   new VacancyStatusObservation(null,"html:status-unverified"),
+   t2,CancellationToken.None));
+  var after=Assert.Single(await storage.ReadVacanciesForTriageAsync(
+   50000,CancellationToken.None),x=>x.Url==url);
+  Assert.Null(after.IsOpen);
+  Assert.Equal("html:status-unverified",after.StatusEvidence);
+  Assert.Equal(before.LastSeen,after.LastSeen);
+ }
+
+ [Fact]
  public async Task InvalidPositiveOpenAssertionAndUnknownEvidenceAreRejected()
  {
   var storage=new Storage("");
