@@ -14,14 +14,15 @@ public sealed class FreshShortlistStorageTests
   if(string.IsNullOrWhiteSpace(cs))return;
   var db=new Storage(cs);
   await db.Initialize(CancellationToken.None);
-  var id=Guid.NewGuid().ToString("N");
-  var recent=new JobRef("dou","https://jobs.dou.ua/vacancies/"+id+"1/",
+  // Production DOU vacancy links use numeric identifiers.
+  var id=Random.Shared.NextInt64(100000000,900000000);
+  var recent=new JobRef("dou",$"https://jobs.dou.ua/vacancies/{id*10+1}/",
    "Middle .NET Backend",null,DateTimeOffset.UtcNow,
    "Fully remote ASP.NET Core REST API PostgreSQL");
-  var old=new JobRef("dou","https://jobs.dou.ua/vacancies/"+id+"2/",
+  var old=new JobRef("dou",$"https://jobs.dou.ua/vacancies/{id*10+2}/",
    "Middle .NET Backend",null,DateTimeOffset.UtcNow,
    "Fully remote ASP.NET Core REST API PostgreSQL");
-  var applied=new JobRef("dou","https://jobs.dou.ua/vacancies/"+id+"3/",
+  var applied=new JobRef("dou",$"https://jobs.dou.ua/vacancies/{id*10+3}/",
    "Middle .NET Backend",null,DateTimeOffset.UtcNow,
    "Fully remote ASP.NET Core REST API PostgreSQL");
   foreach(var job in new[]{recent,old,applied})
