@@ -19,6 +19,14 @@ Remotive separately. Remotive is **not** automatically scanned during
 `--once` because of its public API rate and attribution requirements.
 See [Phase 30 source integration](docs/PHASE30_WWR_CORE_DISCOVERY.md).
 
+## Autonomous development and handoffs
+
+JobRadar code changes and acceptance are handled autonomously through GitHub and
+HP Trusted Git Relay v2. Every new-chat handoff must carry the mandatory
+[autonomous Relay and handoff policy](docs/orchestration/AUTONOMOUS_RELAY_AND_HANDOFF_POLICY.md),
+including safe retries and administrator escalation only after available
+self-service diagnostics are exhausted.
+
 ## GitHub Actions spending protection (2026-10-09)
 
 **All six GitHub Actions workflows are disabled** (removed atomically in [commit a5a621b](https://github.com/avysotsky/JobRadar/commit/a5a621b959836d8ea1d9400dfe220006a2876b9e)) due to the user's explicit instruction. Historical GitHub CI results below describe past runs only; they are not evidence of any new validation. **Do not restore workflows, automatic PR checks, scheduled jobs, or workflow_dispatch without explicit permission.** Use [local test validation](scripts/validate-local.ps1) instead.
