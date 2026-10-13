@@ -139,6 +139,35 @@ if(args.Contains("--freelancer-once"))
 var cs=Environment.GetEnvironmentVariable("JOBRADAR_DB") ?? options.ConnectionString;
 var storage=new Storage(cs);
 try{await storage.Initialize(CancellationToken.None);}catch(Exception e){Console.Error.WriteLine("Database unavailable: "+e.Message);return 3;}
+if(args.Contains("--rss-query-recall"))
+{
+ // Read-only attribution from the latest persisted run. A match between
+ // events and a crawl report is not proof of exhaustive RSS market coverage.
+ try
+ {
+  var latest=await storage.ReadLatestCrawlReportAsync(CancellationToken.None);
+  if(latest is null)
+  {
+   Console.Error.WriteLine("No persisted crawl report for RSS query recall");
+   return 4;
+  }
+  var names=latest.Sources.Select(s=>s.Source)
+   .Where(s=>RssQueryRecall.CanonicalProvider(s)!=null)
+   .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+  var events=await storage.ReadRssQueryObservationsAsync(
+   latest.StartedAt,latest.EndedAt,names,50000,CancellationToken.None);
+  var review=RssQueryRecall.Analyze(latest,events);
+  Console.WriteLine(JsonSerializer.Serialize(review,
+   new JsonSerializerOptions{WriteIndented=true}));
+  return review.Queries.Count==0||
+   review.Queries.Any(q=>q.IncrementalUrls is null)?4:0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("RSS query recall unavailable: "+e.GetType().Name);
+  return 4;
+ }
+}
 if(args.Contains("--coverage-review"))
 {
  // The last 20 persisted reports are the only evidence considered. This
