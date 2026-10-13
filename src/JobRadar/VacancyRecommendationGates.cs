@@ -14,7 +14,7 @@ public static class VacancyRecommendationGates
   var job=assessment.Vacancy;
   var warnings=assessment.Warnings.ToList();
   var bucket=assessment.Bucket;
-  if(decisions is not null &&
+  if(decisions is not null && Storage.IsAcceptableEmploymentUrl(job.Url) &&
     decisions.TryGetValue(Storage.CanonicalEmploymentUrl(job.Url),out var decision))
   {
    if(decision.Decision=="Applied")
