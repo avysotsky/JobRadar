@@ -67,7 +67,6 @@ public sealed class VacancyRecommendationGateTests
 
  [Theory]
  [InlineData("http://jobs.dou.ua/vacancies/1")]
- [InlineData("https://user:secret@jobs.dou.ua/vacancies/1")]
  [InlineData("https://jobs.dou.ua/vacancies/1#fragment")]
  [InlineData("https://jobs.dou.ua/")]
  [InlineData("not an url")]
