@@ -27,7 +27,9 @@ public sealed class PendingRetryTests
    {Content=new StringContent(html)}));
   var runner=new PendingRetry(new HttpFetcher(http,0),storage,Options());
   var result=await runner.RunAsync(CancellationToken.None);
-  Assert.Equal(1,result.Recovered);
+  // The test database is shared by other integration tests; retry may
+  // also recover unrelated DOU jobs. Verify this specific vacancy below.
+  Assert.True(result.Recovered>=1);
   await using var connection=new NpgsqlConnection(cs);
   await connection.OpenAsync();
   await using var cmd=new NpgsqlCommand(
@@ -50,16 +52,43 @@ public sealed class PendingRetryTests
     "Middle .NET Blocked",null,null);
   await storage.SaveDiscovered(job,CancellationToken.None);
   await storage.SaveError(job.Source,job.Url,"Non-retryable HTTP status 403 for "+job.Url,CancellationToken.None);
-  var attempts=0;
-  using var http=new HttpClient(new Stub(_=>{
-   attempts++;return new HttpResponseMessage(HttpStatusCode.OK){Content=new StringContent("<article>"+new string('X',180)+"</article>")};
+  // A shared test database may contain unrelated eligible DOU vacancies.
+  // Counting ALL retry requests/recoveries makes this assertion order-dependent.
+  // We must prove that this particular 403 vacancy is never replayed.
+  var attemptedUrls=new List<string>();
+  using var http=new HttpClient(new Stub(req=>{
+   attemptedUrls.Add(req.RequestUri!.AbsoluteUri);
+   return new HttpResponseMessage(HttpStatusCode.OK)
+    {Content=new StringContent("<article>"+new string('X',180)+"</article>")};
   }));
   var runner=new PendingRetry(new HttpFetcher(http,0),storage,Options());
   var status=await runner.StatusAsync(CancellationToken.None);
   Assert.True(status.Blocked>=1);
-  var report=await runner.RunAsync(CancellationToken.None);
-  Assert.Equal(0,attempts);
-  Assert.Equal(0,report.Recovered);
+  var eligible=await storage.GetPendingVacanciesAsync(
+   ["dou"],Options().PendingMaxAttempts,Options().PendingMinimumAgeMinutes,
+   100,CancellationToken.None);
+  Assert.DoesNotContain(eligible,item=>item.Job.Url==job.Url);
+
+  await runner.RunAsync(CancellationToken.None);
+  Assert.DoesNotContain(job.Url,attemptedUrls);
+
+  // Ensure the rejection remains persisted and no full text was fabricated,
+  // regardless of legitimate retries of other vacancies in the shared DB.
+  await using var connection=new NpgsqlConnection(cs);
+  await connection.OpenAsync();
+  await using var cmd=new NpgsqlCommand("""
+SELECT f.attempts,f.last_error,j.full_text_at
+FROM jobs j
+JOIN fetch_errors f ON f.source=j.source AND f.url=j.url
+WHERE j.source=@source AND j.url=@url
+""",connection);
+  cmd.Parameters.AddWithValue("source",job.Source);
+  cmd.Parameters.AddWithValue("url",job.Url);
+  await using var reader=await cmd.ExecuteReaderAsync();
+  Assert.True(await reader.ReadAsync());
+  Assert.Equal(1,reader.GetInt32(0));
+  Assert.StartsWith("Non-retryable HTTP status 403",reader.GetString(1));
+  Assert.True(reader.IsDBNull(2));
  }
 
  [Fact]
