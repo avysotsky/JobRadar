@@ -13,9 +13,9 @@ public sealed record VacancyStatusObservation(bool? IsOpen,string EvidenceCode);
 public static class VacancyStatusEvidence
 {
  private static readonly Regex Closed=new(
-  @"(?:ця\s+вакансія\s+вже\s+завершена|вакансія\s+(?:завершена|закрита)|"
-  + @"эта\s+вакансия\s+(?:закрыта|завершена)|вакансия\s+(?:закрыта|завершена)|"
-  + @"(?:job|position)\s+is\s+closed|no\s+longer\s+accepting\s+applications)",
+  @"(?:ця\s+вакансія\s+вже\s+завершена|вакансі[яї]\s+(?:завершена|закрита|неактивна|недоступна)|"
+  + @"эта\s+вакансия\s+(?:закрыта|завершена|неактивна)|вакансия\s+(?:закрыта|завершена|неактивна)|"
+  + @"(?:job|position)\s+is\s+(?:closed|inactive)|no\s+longer\s+accepting\s+applications)",
   RegexOptions.IgnoreCase|RegexOptions.CultureInvariant|RegexOptions.Compiled);
 
  // Provider-style page banners only. A job description may DISCUSS a
@@ -35,6 +35,18 @@ public static class VacancyStatusEvidence
    var value=Parsers.Clean(banner.TextContent);
    if(value.Length is >0 and <=500 && Closed.IsMatch(value))
     return new VacancyStatusObservation(false,"html:explicit-closed-banner");
+  }
+  // Some boards put an explicit inactive marker into the visible title
+  // instead of a banner. Do not search arbitrary description paragraphs:
+  // they may discuss closed vacancies unrelated to this opening.
+  foreach(var heading in doc.QuerySelectorAll(
+    "h1,[data-testid='vacancy-title'],.vacancy-title,.job-title"))
+  {
+   if(heading.Closest("article,.job-description,[data-testid='job-description']") is not null)
+    continue;
+   var title=Parsers.Clean(heading.TextContent);
+   if(title.Length is >0 and <=500 && Closed.IsMatch(title))
+    return new VacancyStatusObservation(false,"html:explicit-closed-heading");
   }
   foreach(var ignored in doc.QuerySelectorAll("script,style,footer,nav,aside"))ignored.Remove();
   var body=Parsers.Clean(doc.Body?.TextContent??"");
