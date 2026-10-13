@@ -16,14 +16,19 @@ public sealed partial class Storage
    throw new ArgumentOutOfRangeException(nameof(maxJobs));
   const string sql="""
 SELECT source,url,title,company,published_at,preview
-FROM jobs
-WHERE source IN ('dou','djinni')
- AND last_seen >= now()-(@days * INTERVAL '1 day')
- AND (status_checked_at IS NULL OR
-      status_checked_at < now()-(@hours * INTERVAL '1 hour'))
+FROM jobs j
+WHERE j.source IN ('dou','djinni')
+ AND ((j.source='dou' AND j.url LIKE 'https://jobs.dou.ua/%')
+  OR (j.source='djinni' AND
+    (j.url LIKE 'https://djinni.co/%' OR j.url LIKE 'https://www.djinni.co/%')))
+ AND NOT EXISTS (SELECT 1 FROM employment_decisions e
+  WHERE e.url=rtrim(j.url,'/'))
+ AND j.last_seen >= now()-(@days * INTERVAL '1 day')
+ AND (j.status_checked_at IS NULL OR
+      j.status_checked_at < now()-(@hours * INTERVAL '1 hour'))
 ORDER BY
- CASE WHEN open_status IS NULL THEN 0 ELSE 1 END,
- last_seen DESC, source, url
+ CASE WHEN j.open_status IS NULL THEN 0 ELSE 1 END,
+ j.last_seen DESC, j.source, j.url
 LIMIT @limit;
 """;
   await using var db=new NpgsqlConnection(connectionString);
