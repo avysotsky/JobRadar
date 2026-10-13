@@ -41,7 +41,8 @@ public static class VacancyRecommendationGates
   // A score and an HTTP 200 are not evidence that applications are accepted.
   // Only independently recorded positive provider status allows the strong
   // recommendation export. Unknown stays available for manual review.
-  if(bucket==FitBucket.LikelyFit && job.IsOpen!=true)
+  if(bucket==FitBucket.LikelyFit && (job.IsOpen!=true ||
+    job.StatusCheckedAt is null || string.IsNullOrWhiteSpace(job.StatusEvidence)))
   {
    bucket=FitBucket.NeedsReview;
    warnings.Add("OPEN_NOT_VERIFIED: нет подтверждения, что вакансия принимает отклики");
