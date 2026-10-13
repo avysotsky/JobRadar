@@ -279,6 +279,42 @@ if(args.Contains("--coverage-review"))
   return 4;
  }
 }
+if(args.Contains("--coverage-action-plan"))
+{
+ // Offline composition of Phase 27 + 33 + 34 evidence. No provider HTTP,
+ // retries, source setting changes or employer/application actions.
+ try
+ {
+  var now=DateTimeOffset.UtcNow;
+  var runs=await storage.ReadRecentCrawlReportsAsync(20,CancellationToken.None);
+  var coverage=CoverageReview.Analyze(runs,now);
+  DiscoveryGapReport? gaps=null;
+  if(runs.Count>0)
+  {
+   var latest=runs[0];
+   var names=latest.Sources.Select(x=>x.Source)
+    .Where(x=>DiscoveryGapAudit.ProviderForQuery(x)!=null)
+    .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+   var observations=await storage.ReadDiscoveryGapObservationsAsync(
+    latest.StartedAt,latest.EndedAt,names,50000,CancellationToken.None);
+   gaps=DiscoveryGapAudit.Analyze(latest,observations);
+  }
+  var vacancies=await storage.ReadVacanciesForTriageAsync(
+   Math.Clamp(options.ExportMaxRecords,1,50000),CancellationToken.None);
+  var count=await storage.CountVacanciesForTriageAsync(CancellationToken.None);
+  var decisions=await storage.ReadEmploymentDecisionsAsync(CancellationToken.None);
+  var funnel=VacancyFunnel.Analyze(vacancies,decisions,count,now);
+  var plan=CoverageActionPlanner.Analyze(coverage,gaps,funnel,now);
+  Console.WriteLine(JsonSerializer.Serialize(plan,
+   new JsonSerializerOptions{WriteIndented=true}));
+  return plan.Actions.Any(x=>x.Priority is "P0" or "P1")?4:0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Coverage action plan unavailable: "+e.GetType().Name);
+  return 4;
+ }
+}
 if(args.Contains("--vacancy-funnel"))
 {
  // Offline read-only operator report over existing stored vacancies.
