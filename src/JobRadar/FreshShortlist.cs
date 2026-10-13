@@ -48,6 +48,14 @@ public static class FreshShortlist
    if(!IsOriginalTrustedLink(job.Source,job.Url))continue;
    var assessed=VacancyRecommendationGates.Apply(
     VacancyTriage.Assess(job),now,decisions);
+   var status=StatusLevel(job,now);
+   // A historic positive status must not be presented in the current
+   // short list as if it were freshly verified.
+   if(assessed.Bucket==FitBucket.LikelyFit &&
+      status!="POSITIVE_EVIDENCE_RECORDED_24H")
+    assessed=assessed with {Bucket=FitBucket.NeedsReview,
+     Warnings=assessed.Warnings.Concat(new[]
+     {"SHORTLIST_STATUS_NOT_FRESH: positive evidence is not recent"}).ToArray()};
    if(assessed.Bucket==FitBucket.Excluded ||
       assessed.WorkMode is WorkMode.Hybrid or WorkMode.Onsite)
     continue;
@@ -59,7 +67,6 @@ public static class FreshShortlist
        VacancyReviewTier.PartialDotNetEvidence))
      continue;
    }
-   var status=StatusLevel(job,now);
    var recency=job.LastSeen>now?"FUTURE_LAST_SEEN_UNVERIFIED":
     now-job.LastSeen<=TimeSpan.FromHours(24)
      ?"DISCOVERED_WITHIN_24H":"LAST_SEEN_OVER_24H";
