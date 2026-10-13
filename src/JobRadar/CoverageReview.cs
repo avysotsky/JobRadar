@@ -134,5 +134,8 @@ public static class CoverageReview
   source=="djinni"||source.StartsWith("djinni-rss-",StringComparison.OrdinalIgnoreCase)
    ?"Djinni":
   source.StartsWith("robota-api-",StringComparison.OrdinalIgnoreCase)
-   ?"Robota":null;
+   ?"Robota":
+  source.Equals("wwr-backend",StringComparison.OrdinalIgnoreCase)||
+  source.Equals("wwr-programming",StringComparison.OrdinalIgnoreCase)
+   ?"WWR":null;
 }
