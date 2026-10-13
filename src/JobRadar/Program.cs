@@ -232,6 +232,35 @@ if(args.Contains("--rss-query-recall"))
   return 4;
  }
 }
+if(args.Contains("--discovery-gaps"))
+{
+ // Offline latest-run reconciliation across DOU/Djinni/Robota/WWR.
+ // Reads existing event history only; no HTTP, crawler or status mutations.
+ try
+ {
+  var report=await storage.ReadLatestCrawlReportAsync(CancellationToken.None);
+  if(report is null)
+  {
+   Console.Error.WriteLine("No saved crawl report for discovery gaps");
+   return 4;
+  }
+  var names=report.Sources.Select(x=>x.Source)
+   .Where(x=>DiscoveryGapAudit.ProviderForQuery(x)!=null)
+   .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+  var observations=await storage.ReadDiscoveryGapObservationsAsync(
+   report.StartedAt,report.EndedAt,names,50000,CancellationToken.None);
+  var review=DiscoveryGapAudit.Analyze(report,observations);
+  Console.WriteLine(JsonSerializer.Serialize(review,
+   new JsonSerializerOptions{WriteIndented=true}));
+  return review.Queries.Count==0 ||
+   review.Queries.Any(x=>x.Priority is "P0" or "P1")?4:0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Discovery gaps unavailable: "+e.GetType().Name);
+  return 4;
+ }
+}
 if(args.Contains("--coverage-review"))
 {
  // The last 20 persisted reports are the only evidence considered. This
