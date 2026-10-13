@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS jobs (
  open_status boolean, last_seen timestamptz NOT NULL, full_text_at timestamptz,
  PRIMARY KEY(source,url));
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS preview text;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS candidate_required_location text;
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS status_checked_at timestamptz;
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS status_evidence text;
 CREATE TABLE IF NOT EXISTS job_status_checks (
@@ -71,6 +72,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_project_tracker_applied_once
  WHERE event_type='Applied';
 CREATE INDEX IF NOT EXISTS ix_project_tracker_events_recent
  ON project_tracker_events(provider,url,event_at DESC,id DESC);
+-- Atomic provider request reservations are durable and independent of process restarts.
+CREATE TABLE IF NOT EXISTS remotive_daily_requests (
+ day_utc date PRIMARY KEY,
+ requests int NOT NULL CHECK(requests BETWEEN 1 AND 2),
+ last_requested_at timestamptz NOT NULL
+);
 CREATE TABLE IF NOT EXISTS api_request_budget (
  provider text PRIMARY KEY, requests_used int NOT NULL,
  upper_limit int NOT NULL CHECK(upper_limit BETWEEN 1 AND 500));
@@ -95,13 +102,14 @@ CREATE TABLE IF NOT EXISTS fetch_errors (
   await using var c=new NpgsqlConnection(connectionString);await c.OpenAsync(ct);
   await using var tx=await c.BeginTransactionAsync(ct);
   const string sql="""
-INSERT INTO jobs(source,url,title,company,published_at,preview,last_seen)
-VALUES(@source,@url,@title,@company,@published,@preview,now())
+INSERT INTO jobs(source,url,title,company,published_at,preview,candidate_required_location,last_seen)
+VALUES(@source,@url,@title,@company,@published,@preview,@location,now())
 ON CONFLICT(source,url) DO UPDATE SET
  title=excluded.title,
  company=COALESCE(excluded.company,jobs.company),
  published_at=COALESCE(excluded.published_at,jobs.published_at),
  preview=COALESCE(excluded.preview,jobs.preview),
+ candidate_required_location=COALESCE(excluded.candidate_required_location,jobs.candidate_required_location),
  last_seen=excluded.last_seen;
 """;
   await using var cmd=new NpgsqlCommand(sql,c,tx);
@@ -111,6 +119,7 @@ ON CONFLICT(source,url) DO UPDATE SET
   cmd.Parameters.AddWithValue("company",(object?)job.Company??DBNull.Value);
   cmd.Parameters.AddWithValue("published",NpgsqlDbType.TimestampTz,(object?)job.PublishedAt?.ToUniversalTime()??DBNull.Value);
   cmd.Parameters.AddWithValue("preview",(object?)job.Preview??DBNull.Value);
+  cmd.Parameters.AddWithValue("location",(object?)job.CandidateRequiredLocation??DBNull.Value);
   await cmd.ExecuteNonQueryAsync(ct);
   if(!string.IsNullOrWhiteSpace(queryName))
   {
