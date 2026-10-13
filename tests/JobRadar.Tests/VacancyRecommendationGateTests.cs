@@ -11,7 +11,8 @@ public sealed class VacancyRecommendationGateTests
   VacancyTriage.Assess(new VacancySnapshot("dou",url,
    "Middle .NET Backend",null,null,
    "Fully remote ASP.NET Core Web API REST API EF Core PostgreSQL RabbitMQ",
-   true,isOpen,Now.AddDays(-1),seen,["dou"]));
+   true,isOpen,Now.AddDays(-1),seen,["dou"],
+   isOpen==true?Now:null,isOpen==true?"test:affirmative-open":null));
 
  [Fact]
  public void OnlyFreshVerifiedOpenCandidateCanEnterActionableShortlist()
