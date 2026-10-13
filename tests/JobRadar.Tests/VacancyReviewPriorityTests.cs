@@ -24,6 +24,8 @@ public sealed class VacancyReviewPriorityTests
  [InlineData("Middle .NET WPF Developer","Fully remote ASP.NET Core REST API",VacancyReviewTier.OtherSpecialization)]
  [InlineData("Middle FullStack .NET Developer","Fully remote REST API React",VacancyReviewTier.OtherSpecialization)]
  [InlineData("Middle .NET Backend","Remote only USA. ASP.NET Core REST API",VacancyReviewTier.DifficultRequirements)]
+ [InlineData("Middle .NET Backend","Remote EU only. ASP.NET Core REST API",VacancyReviewTier.DifficultRequirements)]
+ [InlineData("Middle .NET Backend","EU-only remote position. ASP.NET Core REST API",VacancyReviewTier.DifficultRequirements)]
  [InlineData("Middle .NET Backend","Remote. Mandatory relocation to Poland. ASP.NET Core REST API",VacancyReviewTier.DifficultRequirements)]
  [InlineData("Middle .NET Backend","Fully remote ASP.NET Core REST API. Upper-Intermediate English required",VacancyReviewTier.DifficultRequirements)]
  [InlineData("Middle / Сеньйор .NET Backend","Fully remote ASP.NET Core REST API",VacancyReviewTier.DifficultRequirements)]
