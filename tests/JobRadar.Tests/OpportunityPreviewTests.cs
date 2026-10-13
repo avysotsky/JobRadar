@@ -55,7 +55,8 @@ public sealed class OpportunityPreviewTests
   Assert.Equal(1,result.TotalUnique);
   Assert.Equal(1,result.Employment);
   Assert.Equal(0,result.FreelanceProjects);
-  Assert.Equal(1,result.EmploymentLikelyFit);
+  Assert.Equal(0,result.EmploymentLikelyFit);
+  Assert.Equal(1,result.EmploymentNeedsReview);
   var row=JsonDocument.Parse(writer.ToString());
   using(row)
   {

@@ -23,7 +23,10 @@ public static class TriageExport
   // append-only jobs table is not undercounted relative to evaluated records.
   var records=await storage.ReadVacanciesForTriageAsync(maxRecords,ct);
   var totalStored=await storage.CountVacanciesForTriageAsync(ct);
-  var evaluated=records.Select(VacancyTriage.Assess)
+  var decisions=await storage.ReadEmploymentDecisionsAsync(ct);
+  var now=DateTimeOffset.UtcNow;
+  var evaluated=records.Select(x=>VacancyRecommendationGates.Apply(
+    VacancyTriage.Assess(x),now,decisions))
    .OrderBy(x=>x.Bucket).ThenByDescending(x=>x.Score)
    .ThenByDescending(x=>x.Vacancy.LastSeen).ToArray();
   Directory.CreateDirectory(directory);

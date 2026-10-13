@@ -77,6 +77,11 @@ CREATE TABLE IF NOT EXISTS api_request_budget (
 CREATE TABLE IF NOT EXISTS retry_runs (
  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, started_at timestamptz NOT NULL,
  ended_at timestamptz NOT NULL, report jsonb NOT NULL);
+-- User-entered application decisions are not provider opening evidence.
+CREATE TABLE IF NOT EXISTS employment_decisions (
+ url text PRIMARY KEY,
+ decision text NOT NULL CHECK(decision IN ('Applied','Inactive')),
+ updated_at timestamptz NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS fetch_errors (
  source text NOT NULL, url text NOT NULL, attempts int NOT NULL DEFAULT 1,
  last_error text NOT NULL, last_attempt timestamptz NOT NULL,

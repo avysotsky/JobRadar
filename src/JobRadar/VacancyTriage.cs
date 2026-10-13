@@ -117,7 +117,7 @@ public static class VacancyTriage
   if(!job.HasFullText)warnings.Add("Полный текст не получен: оценка только по анонсу");
   if(!job.HasFullText && !Net.IsMatch(all))warnings.Add("Короткий анонс без .NET не является доказательством нерелевантности");
   var verifiedClosure=job.IsOpen==false &&
-    job.StatusEvidence is ("html:explicit-closed-banner" or "html:standalone-closed-message");
+    job.StatusEvidence is ("html:explicit-closed-banner" or "html:standalone-closed-message" or "html:explicit-closed-heading" or "html:explicit-closed-title");
   if(verifiedClosure)warnings.Add("Источник явно обозначил вакансию закрытой — свидетельство сохранено");
   else if(job.IsOpen==false)warnings.Add("Исторический признак закрытия без проверяемого свидетельства — требуется проверка");
   if(job.IsOpen is null)warnings.Add("Актуальность вакансии не подтверждена");
