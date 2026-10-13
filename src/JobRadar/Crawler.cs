@@ -7,7 +7,8 @@ namespace JobRadar;
 public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions options,
  Action<string>? progress=null)
 {
- public async Task<CrawlReport> RunAsync(IEnumerable<IJobSource> sources,CancellationToken ct)
+ public async Task<CrawlReport> RunAsync(IEnumerable<IJobSource> sources,CancellationToken ct,
+  Func<CancellationToken,Task<SourceResult>>? additionalDiscovery=null)
  {
   var started=DateTimeOffset.UtcNow;
   var summaries=new List<SourceResult>();
@@ -252,6 +253,22 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
      source is RobotaApiSource || rssPageParsed?droppedRecords:null,cachedDetails));
    progress?.Invoke($"{label}: FINISHED status={status}, pages={pages}, found={references}, full={details}, cached={cachedDetails}, failed={failedDetails}"+
      (source is RobotaApiSource && !options.EnabledRobotaDetails?", Robota full text paused (HTTP 403)":""));
+  }
+  if(additionalDiscovery is not null)
+  {
+   // A quota-limited provider is run inside the same persisted coverage
+   // report without being mistaken for a paginated HTML/RSS source.
+   try
+   {
+    summaries.Add(await additionalDiscovery(ct));
+   }
+   catch(Exception ex) when(!ct.IsCancellationRequested)
+   {
+    // Main provider discoveries remain available even if an optional
+    // integration fails before it can issue its own source summary.
+    summaries.Add(new SourceResult("remotive",0,0,0,0,null,
+      "FAILED",ex.GetType().Name));
+   }
   }
   var report=new CrawlReport(started,DateTimeOffset.UtcNow,summaries);
   await storage.SaveReport(report,ct);
