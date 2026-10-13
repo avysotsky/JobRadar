@@ -139,6 +139,45 @@ if(args.Contains("--freelancer-once"))
 var cs=Environment.GetEnvironmentVariable("JOBRADAR_DB") ?? options.ConnectionString;
 var storage=new Storage(cs);
 try{await storage.Initialize(CancellationToken.None);}catch(Exception e){Console.Error.WriteLine("Database unavailable: "+e.Message);return 3;}
+var employmentMarkArg=args.FirstOrDefault(x=>
+ x.StartsWith("--employment-mark-applied=",StringComparison.OrdinalIgnoreCase)||
+ x.StartsWith("--employment-mark-inactive=",StringComparison.OrdinalIgnoreCase));
+if(employmentMarkArg is not null)
+{
+ try
+ {
+  var applied=employmentMarkArg.StartsWith("--employment-mark-applied=",
+   StringComparison.OrdinalIgnoreCase);
+  var prefix=applied?"--employment-mark-applied=":"--employment-mark-inactive=";
+  var url=employmentMarkArg[prefix.Length..];
+  await storage.MarkEmploymentDecisionAsync(url,
+   applied?"Applied":"Inactive",CancellationToken.None);
+  Console.WriteLine(JsonSerializer.Serialize(new
+   {Url=Storage.CanonicalEmploymentUrl(url),Decision=applied?"Applied":"Inactive",
+    Origin="UserReported",ProviderOpenStatus="NotEstablished"}));
+  return 0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Employment decision not saved: "+e.GetType().Name);
+  return 4;
+ }
+}
+if(args.Contains("--employment-decisions"))
+{
+ try
+ {
+  var decisions=await storage.ReadEmploymentDecisionsAsync(CancellationToken.None);
+  Console.WriteLine(JsonSerializer.Serialize(decisions.Values,
+   new JsonSerializerOptions{WriteIndented=true}));
+  return 0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Employment decisions unavailable: "+e.GetType().Name);
+  return 4;
+ }
+}
 if(args.Contains("--rss-query-recall"))
 {
  // Read-only attribution from the latest persisted run. A match between
@@ -259,8 +298,9 @@ if(args.Contains("--opportunities-preview"))
   var histories=await storage.ReadDiscoveryHistoriesAsync(CancellationToken.None);
   var coverage=await storage.ReadLatestCoverageAsync(20,CancellationToken.None);
   var tracked=await storage.ReadTrackedProjectsAsync(CancellationToken.None);
+  var decisions=await storage.ReadEmploymentDecisionsAsync(CancellationToken.None);
   var result=await OpportunityPreview.WriteAsync(
-   jobs,histories,coverage,readers,Console.Out,CancellationToken.None,tracked);
+   jobs,histories,coverage,readers,Console.Out,CancellationToken.None,tracked,decisions);
   Console.Error.WriteLine("Opportunities preview: "+JsonlOutput.Serialize(new
    {Result=result,TotalStoredEmployment=stored,EmploymentOmittedByLimit=Math.Max(0L,stored-jobs.Count)}));
   // Exit nonzero when export is truncated or any imported records failed to
