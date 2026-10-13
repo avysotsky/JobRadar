@@ -11,8 +11,9 @@ FullStack roles ahead of substantially better matches.
 - Adds a **separate** `VacancyReviewTier` used only for sorting `NeedsReview`:
   1. `TargetDotNetBackend`: .NET/C# plus Backend/API evidence.
   2. `PartialDotNetEvidence`: .NET is present, Backend is not established.
-  3. `DifficultRequirements`: title or description points to senior ownership,
-     explicit high English proficiency, office or hybrid.
+  3. `DifficultRequirements`: senior ownership (including Ukrainian/Russian
+     senior titles), explicit high English proficiency, restricted remote countries,
+     required relocation, office or hybrid.
   4. `OtherSpecialization`: WPF/Avalonia/desktop, frontend, FullStack or no .NET.
 - Within a tier, descending existing score and last discovery time still apply.
 - Distinct precedence prioritizes an explicit UI/FullStack specialization over
