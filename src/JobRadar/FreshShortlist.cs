@@ -114,16 +114,27 @@ public static class FreshShortlist
  {
   if(!Storage.IsAcceptableEmploymentUrl(url))return false;
   var uri=new Uri(url!);
-  if(uri.Port!=443)return false;
+  if(uri.Port!=443 || uri.Query.Length!=0)return false;
+  // Never present an arbitrary same-host redirect/account/settings URL as
+  // a job vacancy. These exact path families come from approved parsers.
+  var path=uri.AbsolutePath;
+  static bool Matches(string path,string pattern)=>
+   System.Text.RegularExpressions.Regex.IsMatch(path,pattern,
+    System.Text.RegularExpressions.RegexOptions.IgnoreCase |
+    System.Text.RegularExpressions.RegexOptions.CultureInvariant);
   return source switch
   {
-   "dou"=>uri.Host.Equals("jobs.dou.ua",StringComparison.OrdinalIgnoreCase),
-   "djinni"=>uri.Host.Equals("djinni.co",StringComparison.OrdinalIgnoreCase)
-    || uri.Host.Equals("www.djinni.co",StringComparison.OrdinalIgnoreCase),
-   "robota"=>uri.Host.Equals("robota.ua",StringComparison.OrdinalIgnoreCase)
-    || uri.Host.Equals("www.robota.ua",StringComparison.OrdinalIgnoreCase),
-   "wwr"=>uri.Host.Equals("weworkremotely.com",StringComparison.OrdinalIgnoreCase)
-    || uri.Host.Equals("www.weworkremotely.com",StringComparison.OrdinalIgnoreCase),
+   "dou"=>uri.Host.Equals("jobs.dou.ua",StringComparison.OrdinalIgnoreCase) &&
+    Matches(path,@"^/(?:companies/[^/]+/)?vacancies/[0-9]+/?$"),
+   "djinni"=>(uri.Host.Equals("djinni.co",StringComparison.OrdinalIgnoreCase)
+    || uri.Host.Equals("www.djinni.co",StringComparison.OrdinalIgnoreCase)) &&
+    Matches(path,@"^/jobs/[0-9]+(?:-[a-z0-9-]+)?/?$"),
+   "robota"=>(uri.Host.Equals("robota.ua",StringComparison.OrdinalIgnoreCase)
+    || uri.Host.Equals("www.robota.ua",StringComparison.OrdinalIgnoreCase)) &&
+    Matches(path,@"^/company[0-9]+/vacancy[0-9]+/?$"),
+   "wwr"=>(uri.Host.Equals("weworkremotely.com",StringComparison.OrdinalIgnoreCase)
+    || uri.Host.Equals("www.weworkremotely.com",StringComparison.OrdinalIgnoreCase)) &&
+    Matches(path,@"^/remote-jobs/[^/?#]+/?$"),
    _=>false
   };
  }
