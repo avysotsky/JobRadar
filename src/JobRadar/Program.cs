@@ -279,6 +279,42 @@ if(args.Contains("--coverage-review"))
   return 4;
  }
 }
+if(args.Contains("--query-actionable-yield"))
+{
+ // Offline latest-run per-query new URL and CURRENT stored-fit evidence.
+ // No HTTP calls or mutations to source requests, quotas or employment data.
+ try
+ {
+  var latest=await storage.ReadLatestCrawlReportAsync(CancellationToken.None);
+  if(latest is null)
+  {
+   Console.Error.WriteLine("No saved crawl report for query actionable yield");
+   return 4;
+  }
+  var names=latest.Sources.Select(x=>x.Source)
+   .Where(x=>DiscoveryGapAudit.ProviderForQuery(x)!=null)
+   .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+  var observations=await storage.ReadDiscoveryGapObservationsAsync(
+   latest.StartedAt,latest.EndedAt,names,50000,CancellationToken.None);
+  var gaps=DiscoveryGapAudit.Analyze(latest,observations);
+  var vacancies=await storage.ReadVacanciesForTriageAsync(
+   Math.Clamp(options.ExportMaxRecords,1,50000),CancellationToken.None);
+  var total=await storage.CountVacanciesForTriageAsync(CancellationToken.None);
+  var decisions=await storage.ReadEmploymentDecisionsAsync(CancellationToken.None);
+  var yield=QueryActionableYield.Analyze(
+   latest,gaps,observations,vacancies,decisions,total,DateTimeOffset.UtcNow);
+  Console.WriteLine(JsonSerializer.Serialize(yield,
+   new JsonSerializerOptions{WriteIndented=true}));
+  return yield.Queries.Count==0 ||
+   yield.Queries.Any(x=>!x.MarginalUrls.HasValue) ||
+   yield.CurrentSnapshotOmitted>0?4:0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Query actionable yield unavailable: "+e.GetType().Name);
+  return 4;
+ }
+}
 if(args.Contains("--coverage-action-plan"))
 {
  // Offline composition of Phase 27 + 33 + 34 evidence. No provider HTTP,
