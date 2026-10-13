@@ -20,7 +20,8 @@ INSERT INTO remotive_daily_requests(day_utc,requests,last_requested_at)
 SELECT @day,1,@at
 WHERE NOT EXISTS (
  SELECT 1 FROM remotive_daily_requests
- WHERE last_requested_at > @at - INTERVAL '8 hours')
+ WHERE last_requested_at > @at - INTERVAL '8 hours'
+   AND last_requested_at <= @at)
 ON CONFLICT(day_utc) DO UPDATE SET
  requests=remotive_daily_requests.requests+1,
  last_requested_at=excluded.last_requested_at
@@ -29,7 +30,8 @@ WHERE remotive_daily_requests.requests<2
       excluded.last_requested_at - INTERVAL '8 hours'
   AND NOT EXISTS (
     SELECT 1 FROM remotive_daily_requests
-    WHERE last_requested_at > excluded.last_requested_at - INTERVAL '8 hours')
+    WHERE last_requested_at > @at - INTERVAL '8 hours'
+      AND last_requested_at <= @at)
 RETURNING requests;
 """;
   await using var db=new NpgsqlConnection(connectionString);
