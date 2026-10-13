@@ -24,10 +24,24 @@ FullStack roles ahead of substantially better matches.
 - This is a **manual-review ordering**, not an automated send/apply decision.
   Existing application suppression from Phase 29 remains intact.
 
-## Acceptance
-Synthetic xUnit coverage for level, English, specialization and previews.
-HP Trusted Git Relay v2 restore/build/test on exact SHA with five-resource cleanup;
-no external job-site requests in test acceptance.
+## Acceptance (WSL2 Draft-PR watcher, 2026-10-13)
+Synthetic xUnit coverage for level, English, specialization, preview-only
+records and remote-country restrictions (including "Remote EU only" and
+"EU-only remote"). No external job-site requests during test acceptance.
+
+The WSL2 service detects each new HEAD of this Draft PR and runs
+`restore → build → test` for
+`tests/JobRadar.Tests/JobRadar.Tests.csproj`. It publishes one immutable
+version-1 result for the exact HEAD SHA at
+`avysotsky/JobRadar-Relay-Queue/autotest-results/jobradar/pr-41/<FULL_SHA>.json`.
+Merge requires `overall=PASS`, all three stages `PASS`, real test counts
+with zero failures, and all six cleanup flags `true` (database, role,
+runner, secret, snapshot, workspace). Missing or older-SHA results never
+qualify a new HEAD. A code fix must use a new commit/SHA.
+
+**Do not publish JobRadar tasks to `tasks-v2/` anymore.**
+The previous manual JobRadar Relay task-queue process is superseded by the
+WSL2 Draft-PR watcher. TradeOps/DocFlow queues are unaffected.
 
 ## Mandatory handoff reference
 All future handoffs must include the mandatory autonomy-first Relay policy:
