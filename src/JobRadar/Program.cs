@@ -250,6 +250,29 @@ if(args.Contains("--coverage-review"))
   return 4;
  }
 }
+if(args.Contains("--vacancy-funnel"))
+{
+ // Offline read-only operator report over existing stored vacancies.
+ // No source HTTP requests, status refresh or decisions are written here.
+ try
+ {
+  var maxRecords=Math.Clamp(options.ExportMaxRecords,1,50000);
+  var vacancies=await storage.ReadVacanciesForTriageAsync(
+   maxRecords,CancellationToken.None);
+  var total=await storage.CountVacanciesForTriageAsync(CancellationToken.None);
+  var decisions=await storage.ReadEmploymentDecisionsAsync(CancellationToken.None);
+  var funnel=VacancyFunnel.Analyze(
+   vacancies,decisions,total,DateTimeOffset.UtcNow);
+  Console.WriteLine(JsonSerializer.Serialize(funnel,
+   new JsonSerializerOptions{WriteIndented=true}));
+  return funnel.Evaluated==0||funnel.OmittedByLimit>0?4:0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Vacancy funnel unavailable: "+e.GetType().Name);
+  return 4;
+ }
+}
 if(args.Contains("--robota-coverage"))
 {
  // Offline/provider-read-only diagnostics over the most recent stored crawl.
