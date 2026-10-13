@@ -27,7 +27,7 @@ public sealed class RemotiveCoreTests
  """;
 
  private static DateTimeOffset TestDay()=>
-  new(2035,1,1,0,0,0,TimeSpan.Zero)
+  new DateTimeOffset(2035,1,1,0,0,0,TimeSpan.Zero)
    .AddDays(Random.Shared.Next(0,2500));
 
  [Fact]
