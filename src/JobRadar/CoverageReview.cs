@@ -55,6 +55,7 @@ public static class CoverageReview
    bool present=latest.Index==0;
    if(!present)signals.Add("NOT_IN_NEWEST_RUN");
    if(source.Status=="FAILED")signals.Add("LATEST_SCAN_FAILED");
+   if(source.Status=="SKIPPED_QUOTA")signals.Add("PROVIDER_QUOTA_SKIP");
    if(source.DetailsFailed>0)signals.Add("DETAIL_FETCH_FAILURES");
    if(source.DroppedRecords>0)signals.Add("RAW_ITEMS_DISCARDED");
 
@@ -70,15 +71,17 @@ public static class CoverageReview
 
    // The former peak is an *observed* baseline, not a site-wide expected
    // count. A legitimate drop in the market can also trigger this signal.
-   var previous=history.Skip(1).Where(x=>x.Source.Status!="FAILED")
+   var previous=history.Skip(1).Where(x=>x.Source.Status!="FAILED" && x.Source.Status!="SKIPPED_QUOTA")
     .Select(x=>x.Source.ReferencesFound).ToArray();
    int? priorPeak=previous.Length==0?null:previous.Max();
-   if(priorPeak>=10 && source.Status!="FAILED" &&
+   if(priorPeak>=10 && source.Status!="FAILED" && source.Status!="SKIPPED_QUOTA" &&
       (long)source.ReferencesFound*2<priorPeak.Value)
     signals.Add("OBSERVED_REFERENCES_DOWN_OVER_50_PERCENT");
 
    var error=source.Error??"";
-   if(provider=="Robota")
+   if(provider=="Remotive")
+    signals.Add("API_SAMPLE_NOT_EXHAUSTIVE");
+   else if(provider=="Robota")
    {
     foreach(var signal in RobotaCoverageEvidence.From(source).Signals)
     {
@@ -134,5 +137,6 @@ public static class CoverageReview
   source=="djinni"||source.StartsWith("djinni-rss-",StringComparison.OrdinalIgnoreCase)
    ?"Djinni":
   source.StartsWith("robota-api-",StringComparison.OrdinalIgnoreCase)
-   ?"Robota":null;
+   ?"Robota":
+  source=="remotive"?"Remotive":null;
 }
