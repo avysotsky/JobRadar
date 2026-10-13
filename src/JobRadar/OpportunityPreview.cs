@@ -42,7 +42,8 @@ public static class OpportunityPreview
   IReadOnlyList<StoredSourceCoverage> crawlCoverage,
   IReadOnlyDictionary<OpportunityInputKind,TextReader> inputs,
   TextWriter output,CancellationToken ct,
-  IReadOnlyList<TrackedProject>? manuallyTracked=null)
+  IReadOnlyList<TrackedProject>? manuallyTracked=null,
+  IReadOnlyDictionary<string,EmploymentDecision>? employmentDecisions=null)
  {
   var seen=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
   var items=new List<UnifiedOpportunity>();
@@ -55,7 +56,8 @@ public static class OpportunityPreview
    key??=OpportunityKind.Employment+"|"+vacancy.Source+"|"+vacancy.Url;
    if(!seen.Add(key))continue;
    histories.TryGetValue((vacancy.Source,vacancy.Url),out var observation);
-   var assessment=VacancyTriage.Assess(vacancy);
+   var assessment=VacancyRecommendationGates.Apply(
+    VacancyTriage.Assess(vacancy),DateTimeOffset.UtcNow,employmentDecisions);
    var warnings=assessment.Warnings.ToList();
    if(!validUrl)warnings.Add("Saved source URL is non-HTTPS or malformed; verify manually");
    items.Add(new UnifiedOpportunity(
