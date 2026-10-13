@@ -279,6 +279,47 @@ if(args.Contains("--coverage-review"))
   return 4;
  }
 }
+if(args.Contains("--query-yield-trend"))
+{
+ // Offline, bounded historical analysis. No provider HTTP, scheduling,
+ // automatic query tuning or application actions.
+ try
+ {
+  var saved=await storage.ReadRecentCrawlReportsAsync(6,CancellationToken.None);
+  var snapshots=await storage.ReadVacanciesForTriageAsync(
+   Math.Clamp(options.ExportMaxRecords,1,50000),CancellationToken.None);
+  var total=await storage.CountVacanciesForTriageAsync(CancellationToken.None);
+  var decisions=await storage.ReadEmploymentDecisionsAsync(CancellationToken.None);
+  var now=DateTimeOffset.UtcNow;
+  var examined=new List<QueryActionableYieldReport>();
+  int totalEvents=0;
+  foreach(var run in saved)
+  {
+   var names=run.Sources.Select(x=>x.Source)
+    .Where(x=>DiscoveryGapAudit.ProviderForQuery(x)!=null)
+    .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+   var events=await storage.ReadDiscoveryGapObservationsAsync(
+    run.StartedAt,run.EndedAt,names,50000,CancellationToken.None);
+   // Bound aggregate event volume, not just each individual DB query.
+   totalEvents=checked(totalEvents+events.Count);
+   if(totalEvents>100000)
+    throw new InvalidDataException("Multi-run discovery audit exceeds safe event limit");
+   var gaps=DiscoveryGapAudit.Analyze(run,events);
+   examined.Add(QueryActionableYield.Analyze(
+    run,gaps,events,snapshots,decisions,total,now));
+  }
+  var trend=QueryYieldTrend.Analyze(examined,now);
+  Console.WriteLine(JsonSerializer.Serialize(trend,
+   new JsonSerializerOptions{WriteIndented=true}));
+  return trend.Queries.Count==0 ||
+   trend.Queries.Any(x=>x.Assessment is "UNVERIFIED" or "INSUFFICIENT_RUNS")?4:0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Query yield trend unavailable: "+e.GetType().Name);
+  return 4;
+ }
+}
 if(args.Contains("--query-actionable-yield"))
 {
  // Offline latest-run per-query new URL and CURRENT stored-fit evidence.
