@@ -18,7 +18,7 @@ public sealed class CoverageActionPlannerTests
   new(provider,query,"https://example.test/"+id);
  private static VacancyFunnelRow FunnelRow(string provider,int preview=0,
   int target=0,int unknown=0)=>new(
-   provider,preview+target,0,preview+target,0,0,0,unknown,
+   provider,preview+target,target,preview,0,0,0,unknown,
    0,0,0,0,0,0,target,0,target,0,0,0);
  private static VacancyFunnelReport Funnel(
   params VacancyFunnelRow[] sources)=>
