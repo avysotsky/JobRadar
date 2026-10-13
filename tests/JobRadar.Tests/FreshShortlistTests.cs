@@ -120,6 +120,11 @@ public sealed class FreshShortlistTests
  [InlineData("wwr","https://weworkremotely.com.evil.org/remote-jobs/a")]
  [InlineData("robota","https://robota.ua@evil.com/company1/vacancy2")]
  [InlineData("unknown","https://jobs.dou.ua/vacancies/1/")]
+ [InlineData("dou","https://jobs.dou.ua/redirect?to=https://evil.example/")]
+ [InlineData("dou","https://jobs.dou.ua/vacancies/123/?ref=tracker")]
+ [InlineData("djinni","https://djinni.co/jobs/")]
+ [InlineData("robota","https://robota.ua/company1/")]
+ [InlineData("wwr","https://weworkremotely.com/account/login")]
  public void RejectsLinksOutsideKnownOriginalSource(string source,string url)
  {
   Assert.False(FreshShortlist.IsOriginalTrustedLink(source,url));
