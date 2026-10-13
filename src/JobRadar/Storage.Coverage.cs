@@ -30,7 +30,7 @@ public sealed partial class Storage
          !n.TryGetInt32(out var value) || value<0)continue;
      var source=name.GetString()!;
      if(item.TryGetProperty("Status",out var status) &&
-        status.ToString()=="FAILED")continue;
+        (status.ToString()=="FAILED" || status.ToString()=="SKIPPED_QUOTA"))continue;
      if(!counts.TryGetValue(source,out var previous) || value>previous)
       counts[source]=value;
     }

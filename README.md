@@ -19,6 +19,19 @@ Remotive separately. Remotive is **not** automatically scanned during
 `--once` because of its public API rate and attribution requirements.
 See [Phase 30 source integration](docs/PHASE30_WWR_CORE_DISCOVERY.md).
 
+## Phase 31 — Remotive in regular private vacancy discovery
+
+The ordinary `--once` process now includes the official Remotive
+software-development API with **PostgreSQL-backed request limits**:
+two calls per UTC day at most and at least eight hours between calls,
+including across midnight. Calls are reserved before HTTP, even if they
+fail; skips are labelled `SKIPPED_QUOTA` rather than zero vacancies.
+
+Only C#/.NET-relevant preview records and the required working region
+are stored locally, always with the original Remotive listing URL
+and Remotive attribution. Current availability and the right to work
+from Ukraine remain unverified. [Phase 31 details](docs/PHASE31_REMOTIVE_DURABLE_CORE.md).
+
 ## Autonomous development and handoffs
 
 JobRadar code changes and acceptance are handled autonomously through GitHub and

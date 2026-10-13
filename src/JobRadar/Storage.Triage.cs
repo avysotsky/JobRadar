@@ -22,7 +22,7 @@ SELECT j.source,j.url,j.title,j.company,j.preview,j.description,
        j.full_text_at,j.open_status,j.published_at,j.last_seen,
        COALESCE((SELECT json_agg(query_name ORDER BY query_name)::text FROM job_queries q
                 WHERE q.source=j.source AND q.url=j.url),'[]'),
-       j.status_checked_at,j.status_evidence
+       j.status_checked_at,j.status_evidence,j.candidate_required_location
 FROM jobs j
 ORDER BY j.last_seen DESC,j.source,j.url LIMIT @limit;
 """;
@@ -46,7 +46,8 @@ ORDER BY j.last_seen DESC,j.source,j.url LIMIT @limit;
     JsonSerializer.Deserialize<string[]>(reader.GetString(10))??[],
     reader.IsDBNull(11)?null:
       new DateTimeOffset(DateTime.SpecifyKind(reader.GetDateTime(11),DateTimeKind.Utc)),
-    reader.IsDBNull(12)?null:reader.GetString(12)));
+    reader.IsDBNull(12)?null:reader.GetString(12),
+    reader.IsDBNull(13)?null:reader.GetString(13)));
   }
   return result;
  }

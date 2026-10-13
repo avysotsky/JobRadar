@@ -10,7 +10,8 @@ public sealed record VacancySnapshot(
  string Source,string Url,string Title,string? Company,string? Preview,
  string Description,bool HasFullText,bool? IsOpen,DateTimeOffset? PublishedAt,
  DateTimeOffset LastSeen,IReadOnlyList<string> Queries,
- DateTimeOffset? StatusCheckedAt=null,string? StatusEvidence=null);
+ DateTimeOffset? StatusCheckedAt=null,string? StatusEvidence=null,
+ string? CandidateRequiredLocation=null);
 
 public sealed record VacancyAssessment(
  VacancySnapshot Vacancy,WorkMode WorkMode,FitBucket Bucket,int Score,
@@ -114,6 +115,13 @@ public static class VacancyTriage
   if(SpokenEnglish.IsMatch(all))warnings.Add("Упомянут разговорный английский");
   if(Regex.IsMatch(all,@"\b(?:wpf|kubernetes|aws|azure)\b",Flags))
    warnings.Add("Встречаются WPF / cloud / Kubernetes — проверить требования");
+  if(job.Source=="remotive")
+  {
+   warnings.Add("Remotive API: вакансии опубликованы с задержкой; фактическая открытость не подтверждена");
+   if(!RemoteReviewTriage.IsUnrestrictedLocation(job.CandidateRequiredLocation))
+    warnings.Add("Remotive: работа из Украины не подтверждена; ограничение региона: "+
+      (string.IsNullOrWhiteSpace(job.CandidateRequiredLocation)?"не указано":job.CandidateRequiredLocation));
+  }
   if(job.Source=="wwr")
    warnings.Add("WWR RSS: разрешение работать из Украины и актуальность объявления не подтверждены; отклик через WWR");
   if(!job.HasFullText)warnings.Add("Полный текст не получен: оценка только по анонсу");
