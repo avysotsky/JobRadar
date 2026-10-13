@@ -177,6 +177,10 @@ public sealed class Crawler(HttpFetcher fetcher,Storage storage,RadarOptions opt
      references++;
      // Persist every discovered vacancy and the query which discovered it.
      await storage.SaveDiscovered(job,ct,source.Name);
+     // WWR RSS supplies only an excerpt, not full provider detail. Do not
+     // amplify feed discovery into dozens of page requests or manufacture
+     // an open-status observation from an RSS response.
+     if(source is WwrRssSource)continue;
      try
      {
       if(await storage.HasRecentFullTextAsync(job,Math.Clamp(options.DetailRefreshHours,1,720),ct))

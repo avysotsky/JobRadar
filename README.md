@@ -4,6 +4,21 @@
 
 **Status:** locally validated ingestion prototype with Robota.ua, DOU and Djinni sources, supplemental RSS search queries, PostgreSQL persistence, optional Docker deployment and full-text JSONL export. This is **not** an exhaustive crawler; read the [coverage status](docs/STATUS.md) and [coverage design](docs/PHASE2_COVERAGE.md).
 
+## Phase 30 — WWR RSS included in ordinary employment crawl
+
+The normal `--once` collector now also reads the official We Work Remotely
+**Backend** and **Programming** RSS categories (default `EnabledWwr=true`).
+Jobs retain original provider backlinks and separate query provenance in
+PostgreSQL, but only a bounded RSS excerpt is stored; WWR individual
+vacancy pages are not fetched. WWR openings remain `NeedsReview`
+until full requirements, ability to work from Ukraine and open status
+are independently verified.
+
+The pre-existing manual `--remote-boards-once` command still includes
+Remotive separately. Remotive is **not** automatically scanned during
+`--once` because of its public API rate and attribution requirements.
+See [Phase 30 source integration](docs/PHASE30_WWR_CORE_DISCOVERY.md).
+
 ## GitHub Actions spending protection (2026-10-09)
 
 **All six GitHub Actions workflows are disabled** (removed atomically in [commit a5a621b](https://github.com/avysotsky/JobRadar/commit/a5a621b959836d8ea1d9400dfe220006a2876b9e)) due to the user's explicit instruction. Historical GitHub CI results below describe past runs only; they are not evidence of any new validation. **Do not restore workflows, automatic PR checks, scheduled jobs, or workflow_dispatch without explicit permission.** Use [local test validation](scripts/validate-local.ps1) instead.

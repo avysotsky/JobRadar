@@ -25,6 +25,8 @@ public sealed class RadarOptions
  public string[] DjinniExtraKeywords {get;set;} = [];
  public bool EnabledDou { get; set; } = true;
  public bool EnabledDjinni { get; set; } = true;
+ // Published WWR RSS feeds; no direct detail-page requests or proof of Ukraine eligibility.
+ public bool EnabledWwr { get; set; } = false;
  public bool EnabledRobota { get; set; } = true;
  // Full-text API returned HTTP 403 in the owner's live crawl. Keep discovery available.
  public bool EnabledRobotaDetails { get; set; } = true;
