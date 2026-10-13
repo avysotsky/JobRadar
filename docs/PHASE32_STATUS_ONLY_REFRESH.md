@@ -67,12 +67,24 @@ allowlisting, no inferred `IsOpen=true`, stale-check ordering, append-only
 history, unchanged job data and 3xx failure.
 
 **No production crawl is claimed from offline tests.**
-HP Trusted Git Relay v2 restore/build/test on the **exact PR head**
-remains mandatory before merge.
 
-**Mandatory handoff:** Follow
-`docs/orchestration/AUTONOMOUS_RELAY_AND_HANDOFF_POLICY.md`.
-If task publication is refused by a tool safety policy, do NOT circumvent
-that policy through a different API or raw Git object. Obtain an
-authorized infrastructure administrator handoff through the documented
-`jobradar-v2-enqueue` helper; preserve every immutable task.
+### Automatic Draft-PR acceptance (WSL2, 2026-10-13)
+On each new Draft PR #42 HEAD, the local WSL2 watcher automatically runs
+`restore → build → test` for
+`tests/JobRadar.Tests/JobRadar.Tests.csproj`. The exact-SHA result is
+written to the private `avysotsky/JobRadar-Relay-Queue` repository at
+`autotest-results/jobradar/pr-42/<FULL_SHA>.json`.
+
+Only merge after matching `repository`, PR and SHA, `overall=PASS`,
+`restore/build/test=PASS`, tests with zero failures and all six
+cleanup flags true: database, role, runner, secret, snapshot, workspace.
+Old-SHA or absent results do not qualify the current head. A failed
+implementation requires a source fix and **new commit SHA**, which the
+watcher detects autonomously. No new `tasks-v2/` or `results-v2/`
+files are used for JobRadar testing. Other project relay queues are
+unaffected.
+
+**Mandatory handoff:** Follow the autonomy-first policy in
+`docs/orchestration/AUTONOMOUS_RELAY_AND_HANDOFF_POLICY.md`, with this
+newer watcher protocol superseding the older JobRadar task-queue
+instructions. Never bypass tool safety controls.
