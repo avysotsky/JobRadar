@@ -100,6 +100,19 @@ public sealed class RemotiveCoreTests
  }
 
  [Fact]
+ public async Task UtcDayBoundaryCannotResetGlobalEightHourCooldown()
+ {
+  var cs=TestDatabaseConnection.Resolve();
+  if(string.IsNullOrWhiteSpace(cs))return;
+  var store=new Storage(cs);
+  await store.Initialize(CancellationToken.None);
+  var late=TestDay().AddHours(23);
+  Assert.True(await store.TryReserveRemotiveAsync(late,CancellationToken.None));
+  Assert.False(await store.TryReserveRemotiveAsync(late.AddHours(2),CancellationToken.None));
+  Assert.True(await store.TryReserveRemotiveAsync(late.AddHours(8),CancellationToken.None));
+ }
+
+ [Fact]
  public async Task ProviderFailureStillConsumesTheDailyReservation()
  {
   var cs=TestDatabaseConnection.Resolve();
