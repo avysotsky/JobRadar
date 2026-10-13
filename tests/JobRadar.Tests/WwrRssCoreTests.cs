@@ -6,11 +6,11 @@ namespace JobRadar.Tests;
 
 public sealed class WwrRssCoreTests
 {
- private static string Rss(string url)=>"""
+ private static string Rss(string url)=>$"""
 <?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0"><channel>
  <item><title>Middle .NET Backend Engineer</title>
- <link>"""+url+"""</link>
+ <link>{url}</link>
  <pubDate>Tue, 13 Oct 2026 08:00:00 GMT</pubDate>
  <description><![CDATA[<p>ASP.NET Core, EF Core, PostgreSQL, remote work</p>]]></description></item>
 </channel></rss>
