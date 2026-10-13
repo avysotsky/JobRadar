@@ -27,7 +27,11 @@ public static class TriageExport
   var now=DateTimeOffset.UtcNow;
   var evaluated=records.Select(x=>VacancyRecommendationGates.Apply(
     VacancyTriage.Assess(x),now,decisions))
-   .OrderBy(x=>x.Bucket).ThenByDescending(x=>x.Score)
+   .OrderBy(x=>x.Bucket)
+   .ThenBy(x=>x.Bucket==FitBucket.NeedsReview
+     ? VacancyReviewPriority.Assess(x).Tier
+     : VacancyReviewTier.TargetDotNetBackend)
+   .ThenByDescending(x=>x.Score)
    .ThenByDescending(x=>x.Vacancy.LastSeen).ToArray();
   Directory.CreateDirectory(directory);
   string stamp=DateTimeOffset.UtcNow.ToString("yyyyMMdd-HHmmss-fffffff");

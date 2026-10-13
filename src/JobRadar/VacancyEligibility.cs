@@ -37,6 +37,8 @@ public static class VacancyEligibility
  private static readonly Regex LimitedRemote = new(
   @"(?:\bremote\b.{0,35}\b(?:only|exclusively)\b.{0,20}\b" + RestrictedPlaces + @"\b)"
   + @"|(?:\bremote\b\s+(?:only\s+)?(?:within|from|in)\s+(?:the\s+)?\b" + RestrictedPlaces + @"\b)"
+  + @"|(?:\bremote\b[^.;\n]{0,25}\b" + RestrictedPlaces + @"\b\s*[-–—]?\s*(?:only|exclusively)\b)"
+  + @"|(?:\b" + RestrictedPlaces + @"\b[-\s]+(?:only|exclusively)\s+(?:remote|work\s+from)\b)"
   + @"|(?:\b(?:must|required\s+to|need\s+to)\s+(?:be\s+)?(?:based|located|resident|reside)\s+(?:in|within)\s+(?:the\s+)?\b" + RestrictedPlaces + @"\b)"
   + @"|(?:\b" + RestrictedPlaces + @"\s+(?:residents?|candidates?)\s+only\b)"
   + @"|(?:\b(?:excluding|except|not\s+available\s+in|not\s+eligible\s+in)\s+ukraine\b)"
