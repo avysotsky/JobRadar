@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text;
 using JobRadar;
 using Npgsql;
 using Xunit;
