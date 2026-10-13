@@ -1,107 +1,106 @@
-# Mandatory autonomous development and handoff policy
+# AUTONOMOUS DEVELOPMENT / RELAY POLICY — MANDATORY
 
-**Owner instruction (2026-10-13):** Do not repeatedly involve the owner
-or the HP administrator in ordinary JobRadar development, build, test,
-diagnosis and retry loops. The assistant must carry out all actions that
-the existing GitHub + Trusted Git Relay v2 tools permit. **Include this
-policy explicitly in EVERY handoff file** authored for moving work to
-another chat. Do not rely only on chat memory.
+**Owner instruction (2026-10-13):** Develop and validate JobRadar autonomously without
+requiring the owner or an HP/OpenClaw administrator to transfer routine build or test tasks.
+
+**Protocol effective 2026-10-13: automatic WSL2 Draft-PR watcher.**
+This newer mechanism **supersedes** the old JobRadar `tasks-v2/` and
+`results-v2/` queue workflow for **all new JobRadar test cycles**.
+Those older files are retained as historical evidence; do not publish new ones.
+The change applies **only** to JobRadar. TradeOps and DocFlow retain their
+own separately authorized relay queues and protocols.
 
 ## Mandatory assistant workflow
 
-1. GitHub is the source of truth. Inspect current `main`, the assignment,
-   existing branches/PRs, and constraints before changing code.
-2. Implement meaningful work in a separate branch and PR. Keep the
-   existing owner-approved architecture, security controls, provider
-   limits, and GitHub Actions-disabled policy.
-3. **Independently** submit immutable `tasks-v2/<fresh-UUIDv4>.json`
-   to `avysotsky/JobRadar-Relay-Queue` via the GitHub connector,
-   targeting the **exact source commit**, following
-   `docs/TRUSTED_GIT_RELAY_V2.md` in the Relay queue repository.
-   Use the fixed supported project and actions, valid current UTC
-   timestamps without milliseconds and a permitted expiry.
-4. Verify each queued task by reading its stored bytes. Retrieve its
-   corresponding `results-v2/<UUID>.json`; check exact UUID,
-   action and SHA, `outcome`, `code`, `exit_code`,
-   passed/failed/skipped and **all five cleanup flags**.
-5. Run the full sequence **restore → build → test** with independent
-   fresh UUIDs, one exact code SHA, and real PostgreSQL xUnit acceptance.
-   Do not declare success from a successful GitHub commit, PR, mock
-   results, or an incomplete runner output.
-6. Diagnose failures **without delegating prematurely**:
-   inspect repository code, relevant tests, Relay protocol, GitHub
-   evidence and safe error metadata. Fix source errors on a new commit;
-   then begin a new exact-SHA acceptance cycle.
-7. If a runner returns an unexplained error but reports **verified
-   cleanup 5/5**, make **one controlled, independent retry** with a
-   *new* task UUID on the unchanged source SHA when safe. It must
-   respect replay rules, expiry, infrastructure health and the
-   applicable security policy. Never edit or reuse an immutable task.
-   Do not spam retries or bypass trust/content/security checks.
-8. Contact the administrator **only** when the necessary diagnosis or
-   repair is genuinely inaccessible through existing tools, after the
-   autonomous options are exhausted; examples are repeated infrastructure
-   failures, missing host-only diagnostic evidence, or a blocked
-   supervisor requiring authorized host access. If needed, send one
-   precise ready-to-forward request including task UUID, source SHA,
-   failure code and the minimal sanitized diagnostics requested.
-   Do not ask the owner to run PowerShell, SSH or Docker as a routine
-   substitute for using Relay.
-9. After a clean PASS for all stages, review the exact PR/base/head,
-   preserve branch freshness, merge only when safe, then verify that
-   `main` has the tested code tree. State actual test counts,
-   cleanup, commit SHA and merge status.
+1. GitHub `avysotsky/JobRadar` is source of truth. Before each action,
+   inspect current `main`, relevant Draft PR, source files, head/base SHA,
+   open review comments and existing autotest result for the exact head.
+2. Implement a cohesive change on a dedicated branch with a **Draft PR**.
+   A new commit to a Draft PR produces a new full 40-character HEAD SHA.
+3. The installed local **WSL2 watcher** detects each newly observed PR HEAD
+   (`refs/pull/<PR>/head`) automatically and runs sequential
+   `restore → build → test` for
+   `tests/JobRadar.Tests/JobRadar.Tests.csproj`. The assistant does
+   **not** create task files, call enqueue helpers, or ask an administrator
+   to dispatch ordinary jobs.
+4. Read the immutable result from PRIVATE
+   `avysotsky/JobRadar-Relay-Queue`:
+   `autotest-results/jobradar/pr-<PR_NUMBER>/<FULL_SHA>.json`.
+   Never accept a result for another SHA or PR. Historical
+   `.acceptance-N.json` files are bootstrap evidence, not a current-head
+   substitute.
+5. Verify `version=1`, `repository=avysotsky/JobRadar`,
+   matching `pr` and `sha`, `overall=PASS`, stage statuses
+   `restore=PASS`, `build=PASS`, `test=PASS`,
+   test counts (nonzero passed, zero failed, explicitly inspect skipped),
+   and all **six** cleanup flags `true`: `database`, `role`,
+   `runner`, `secret`, `snapshot`, `workspace`.
+   An absent result is *pending/unverified*, never PASS.
+6. On `FAIL`, inspect bounded nonsecret status, source and tests;
+   correct the actual issue with a **new commit**. The watcher then
+   evaluates that **new SHA** once. Do not try to requeue/rewrite old-SHA
+   results. Infrastructure and trust-policy failures are not permission
+   to bypass a safety control.
+7. After exact-current-head PASS, check PR mergeability and latest base,
+   ensure changes integrate safely with the current `main`, merge
+   sequentially and verify that `main` contains the exact tested code
+   (or test the actual integrated tree before claiming acceptance if the
+   merge materially alters that tree).
+8. Keep the owner informed of material progress and blockers but do not
+   repeatedly ask for PowerShell, SSH, Docker, database operations,
+   log transfer or manual PR handling when tools can do it.
+9. Preserve GitHub Actions disabled, provider quotas, HTTP 403 access
+   restrictions, privacy rules, user `Applied/Inactive` decisions,
+   provider-status evidence gates and budget boundaries. Never run
+   live vacancy crawls as part of offline acceptance.
 
 ## Security and operational boundaries
 
-- Never change the deployed Relay protocol/security rules, bypass
-  `CONTENT_REVIEW_REQUIRED`, turn on GitHub Actions, or modify
-  TradeOps Relay v1 merely to make a task pass.
-- Source/content rejection calls for an honest code or test-fixture fix
-  without weakening production security. Infra errors with adequate
-  cleanup can justify one controlled retry; no automatic retry on
-  security rejection or unclean resources.
-- Relay acceptance is for **restore/build/test**, not proof of a
-  live production JobRadar crawl. Do not quietly run external live
-  provider scans or assume access to the owner's Windows/PostgreSQL.
-- Prefer substantial autonomous work over frequent owner check-ins;
-  brief progress updates are fine. Never claim the runner passed
-  before a validated PASS result exists.
+- Source of truth is the exact GitHub PR HEAD plus corresponding immutable
+  watcher result. A comment, documentation-only update or old PASS does
+  not prove a different SHA passed.
+- Do not publish new JobRadar tasks in `tasks-v2/` or use
+  `results-v2/` for new acceptance. Do not bypass refusals via Git
+  blob/tree/ref APIs, encoded payloads, altered runner policies or
+  GitHub Actions.
+- WSL2 `restore/build/test` with isolated PostgreSQL does **not**
+  establish live provider crawl success, current vacancies, Ukraine remote
+  eligibility or access to the owner's production PostgreSQL.
+- A new SHA is required after changing any source or test code.
+  Do not fabricate runner metrics, status or cleanup flags.
+- If watcher output is persistently unavailable on newly observed HEADs,
+  record exact PR/SHA and missing path, inspect GitHub evidence and
+  escalate *once* only if a genuine host-level issue remains.
 
-## Confirmed example: Phase 30, 2026-10-13
+## Handoff requirement
 
-- PR #38: `https://github.com/avysotsky/JobRadar/pull/38`.
-- Tested source SHA:
-  `1a522bd2a746a6ba4e743abd80c8f10bd1dc591c`.
-- Initial restore returned `RUNNER_ERROR`, exit 70, cleanup 5/5:
-  `b17d9fc2-83e7-4a21-9e0c-2f4a337d6e1a`.
-- Assistant independently resubmitted **once** with a fresh UUID:
-  restore PASS `6a85d1c0-9f4a-4df7-bc73-e6a08e492185`.
-- Autonomous build PASS:
-  `2f63c428-e6d7-4b90-84ea-32d05cbf94f3`.
-- Autonomous test PASS: **314 passed, 0 failed, 0 skipped**:
-  `4ac93177-c24e-4820-a5a4-973bac6b45da`.
-- All three successful stages had cleanup 5/5. PR merged,
-  `main` SHA `ba9e2763360486650396636cbafdc180dcd3f220`,
-  and `main` tree matched tested source tree. **No administrator needed.**
+Every future handoff must include this heading and preserve this explicit
+instruction:
 
-## Mandatory text for every future handoff
-
-Include a distinct section titled **AUTONOMOUS DEVELOPMENT / RELAY
-POLICY — MANDATORY**, preserving the substance of the numbered
-workflow above and the following explicit sentence:
-
-> The next assistant owns GitHub implementation, PR review, HP Relay
-> restore → build → test, result validation, autonomous diagnosis,
-> controlled safe retries, and merge verification. Do not ask the user
-> or the HP administrator to perform steps that can be completed via
-> existing tools. Escalate only after genuine tool-access or
-> infrastructure blockers are established. Do not bypass security
+> The next assistant owns GitHub implementation, PR review, autonomous
+> WSL2 Draft-PR restore → build → test result validation, autonomous
+> diagnosis, safe new-commit retries, and merge verification. Do not
+> ask the user or administrator to perform steps that the existing
+> GitHub and watcher tools already handle. Do not bypass security
 > protections or claim unverified test results.
 
-A handoff must also record: repository, main and working head SHAs,
-branch/PR, exact tested SHA, task/result UUIDs, test outcome and counts,
-cleanup flags, known limitations, unfinished work and next actions.
-For other project repositories, restate the same **autonomy-first
-principle**, adapted to that project's actual authorized CI/runner
-mechanism; do not falsely claim that JobRadar Relay is installed there.
+Record at minimum repo, latest `main`, each PR branch/head/base,
+exact tested SHA, watcher result path, restore/build/test outcome,
+test counts, all six cleanup flags, actual merge status, blockers
+and next actions. For other projects, state their *actual* protocol;
+never assume JobRadar's WSL2 watcher covers TradeOps or DocFlow.
+
+## Historical reference only: previous HP Trusted Git Relay v2
+
+Prior to the WSL2 watcher, JobRadar used immutable
+`tasks-v2/<UUID>.json` and `results-v2/<UUID>.json` via the
+private Relay Queue. The successful Phase 30 cycle used exact source
+SHA `1a522bd2a746a6ba4e743abd80c8f10bd1dc591c` with
+314 passed, zero failed and five-resource cleanup. This history
+is not an instruction to return to task publication or a current
+PR acceptance result.
+
+The watcher deployment bootstrap result for PR #41 SHA
+`71dec095f4eefb5a236f68081e33c05e07b41f5e` recorded
+337 passed in an `.acceptance-4.json` result. It does
+**not** qualify any subsequent PR #41 HEAD.
