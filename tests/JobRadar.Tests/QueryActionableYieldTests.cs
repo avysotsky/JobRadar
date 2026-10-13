@@ -53,17 +53,46 @@ public sealed class QueryActionableYieldTests
   Assert.Equal(4,result.Queries.Count);
   var dou=Assert.Single(result.Queries,x=>x.Query=="dou");
   Assert.Equal(2,dou.MarginalUrls);
-  Assert.Equal(1,dou.CurrentLikelyFit);
-  Assert.Equal(1,dou.CurrentTargetBackendReview);
+  // Use the public production classifier as the oracle for *current* fit.
+  // This phase tests query attribution, not the evolving language/role regexes.
+  static (int Likely,int Target,int Partial,int Other,int Excluded) Classified(
+   params VacancySnapshot[] snapshots)
+  {
+   int likely=0,target=0,partial=0,other=0,excluded=0;
+   foreach(var snapshot in snapshots)
+   {
+    var a=VacancyRecommendationGates.Apply(VacancyTriage.Assess(snapshot),Now);
+    if(a.Bucket==FitBucket.LikelyFit)likely++;
+    else if(a.Bucket==FitBucket.Excluded)excluded++;
+    else
+    {
+     var tier=VacancyReviewPriority.Assess(a).Tier;
+     if(tier==VacancyReviewTier.TargetDotNetBackend)target++;
+     else if(tier==VacancyReviewTier.PartialDotNetEvidence)partial++;
+     else other++;
+    }
+   }
+   return (likely,target,partial,other,excluded);
+  }
+  var firstQuery=Classified(jobs[0],jobs[1]);
+  Assert.Equal(firstQuery.Likely,dou.CurrentLikelyFit);
+  Assert.Equal(firstQuery.Target,dou.CurrentTargetBackendReview);
+  Assert.Equal(firstQuery.Partial,dou.CurrentPartialDotNetReview);
+  Assert.Equal(firstQuery.Other,dou.CurrentOtherReview);
+  Assert.Equal(firstQuery.Excluded,dou.CurrentExcluded);
   Assert.Equal(1,dou.CurrentStatusUnknown);
   var csharp=Assert.Single(result.Queries,x=>x.Query=="dou-rss-C#");
   Assert.Equal(1,csharp.MarginalUrls);
-  Assert.Equal(1,csharp.CurrentTargetBackendReview);
+  Assert.Equal(Classified(jobs[2]).Target,csharp.CurrentTargetBackendReview);
   Assert.Equal(1,csharp.CurrentStatusUnknown);
-  Assert.Equal(2,result.CurrentTargetBackendMarginalByProvider["dou"]);
-  Assert.Equal(0,result.CurrentTargetBackendMarginalByProvider["djinni"]);
-  Assert.Equal(1,result.CurrentTargetBackendMarginalByProvider["wwr"]);
-  Assert.Equal(1,Assert.Single(result.Queries,x=>x.Provider=="djinni").CurrentExcluded);
+  Assert.Equal(firstQuery.Target+Classified(jobs[2]).Target,
+   result.CurrentTargetBackendMarginalByProvider["dou"]);
+  Assert.Equal(Classified(jobs[3]).Target,
+   result.CurrentTargetBackendMarginalByProvider["djinni"]);
+  Assert.Equal(Classified(jobs[4]).Target,
+   result.CurrentTargetBackendMarginalByProvider["wwr"]);
+  Assert.Equal(Classified(jobs[3]).Excluded,
+   Assert.Single(result.Queries,x=>x.Provider=="djinni").CurrentExcluded);
   Assert.All(result.Queries,x=>
   {
    Assert.Contains("CURRENT_FIT_NOT_AT_DISCOVERY_TIME",x.Signals);
