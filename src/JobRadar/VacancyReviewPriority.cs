@@ -20,12 +20,14 @@ public static class VacancyReviewPriority
   @"\b(?:full[\s-]?stack|front[\s-]?end|wpf|maui|xamarin|"
   + @"avalonia|react(?:\.js)?|angular|vue(?:\.js)?)\b",Flags);
  private static readonly Regex MixedSenior=new(
-  @"\b(?:senior|sr\.?|principal|staff|lead|architect)\b",Flags);
+  @"\b(?:senior|sr\.?|principal|staff|lead|architect|сеньйор|сеньор|ведущий|провідний)\b",Flags);
  private static readonly Regex RequiredAdvancedEnglish=new(
   @"(?:english|англійськ[а-яіїє]*|английск[а-я]*)[^.;\n]{0,45}"
   + @"\b(?:b2|c1|c2|upper[ -]intermediate|advanced)\b"
   + @"|\b(?:b2|c1|c2)\b[^.;\n]{0,30}"
-  + @"(?:english|англійськ|английск)",Flags);
+  + @"(?:english|англійськ|английск)"
+  + @"|\b(?:upper[ -]intermediate|advanced)\b\s*"
+  + @"(?:level\s+(?:of\s+)?)?(?:english|англійськ[а-яіїє]*|английск[а-я]*)",Flags);
 
  public static VacancyReviewRanking Assess(VacancyAssessment candidate)
  {
@@ -33,17 +35,21 @@ public static class VacancyReviewPriority
   var title=job.Title;
   var body=job.Description.Length>0?job.Description:job.Preview??"";
   var text=title+" "+body;
+  var role=VacancyRoleRequirements.Analyze(title,body);
+  var eligibility=VacancyEligibility.Analyze(title,body);
   if(DesktopOrFrontendTitle.IsMatch(title)||
-     VacancyRoleRequirements.Analyze(title,body).FrontendOrFullstackCore)
+     role.FrontendOrFullstackCore || role.MobileDesktopCore ||
+     eligibility.DesktopCore)
    return new(VacancyReviewTier.OtherSpecialization,
     "Основная специализация FullStack, UI, mobile или desktop");
 
   if(MixedSenior.IsMatch(title)||
-     VacancyRoleRequirements.Analyze(title,body).SeniorRoleInDescription||
-     RequiredAdvancedEnglish.IsMatch(text)||
+     role.SeniorRoleInDescription ||
+     eligibility.LocationRestricted || eligibility.MandatoryRelocation ||
+     RequiredAdvancedEnglish.IsMatch(text) ||
      candidate.WorkMode is WorkMode.Hybrid or WorkMode.Onsite)
    return new(VacancyReviewTier.DifficultRequirements,
-    "Сложный уровень, английский B2+ или ограничения формата");
+    "Senior, английский B2+, ограничения страны/релокация или формат работы");
 
   var net=DotNet.IsMatch(text);
   var backend=Backend.IsMatch(text);
