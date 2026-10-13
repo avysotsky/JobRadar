@@ -10,7 +10,8 @@ public sealed class HttpFetcher(HttpClient client,int delayMilliseconds)
    try
    {
     using var resp=await client.GetAsync(uri,ct);
-    if(resp.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized or HttpStatusCode.NotFound)
+    if(resp.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized or HttpStatusCode.NotFound ||
+       ((int)resp.StatusCode>=300 && (int)resp.StatusCode<400))
       throw new InvalidDataException("Non-retryable HTTP status "+(int)resp.StatusCode+" for "+uri);
     if((int)resp.StatusCode==429 || (int)resp.StatusCode>=500)
     {

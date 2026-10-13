@@ -139,6 +139,31 @@ if(args.Contains("--freelancer-once"))
 var cs=Environment.GetEnvironmentVariable("JOBRADAR_DB") ?? options.ConnectionString;
 var storage=new Storage(cs);
 try{await storage.Initialize(CancellationToken.None);}catch(Exception e){Console.Error.WriteLine("Database unavailable: "+e.Message);return 3;}
+if(args.Contains("--status-refresh-once"))
+{
+ // Explicit opt-in: never run as a side effect of --once or the schedule.
+ try
+ {
+  using var handler=new HttpClientHandler{AllowAutoRedirect=false};
+  using var statusHttp=new HttpClient(handler)
+   {Timeout=TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds,5,60))};
+  statusHttp.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
+  var refresh=new StatusOnlyRefresh(
+   new HttpFetcher(statusHttp,Math.Clamp(options.DelayMilliseconds,1000,60000)),
+   storage,ShowProgress);
+  var report=await refresh.RunAsync(options.StatusRefreshMaxJobs,
+   options.StatusRefreshMinAgeHours,options.StatusRefreshRecentDays,
+   CancellationToken.None);
+  Console.WriteLine(JsonSerializer.Serialize(report,
+   new JsonSerializerOptions{WriteIndented=true}));
+  return report.Failed>0?4:0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Status-only refresh failed: "+e.GetType().Name);
+  return 4;
+ }
+}
 var employmentMarkArg=args.FirstOrDefault(x=>
  x.StartsWith("--employment-mark-applied=",StringComparison.OrdinalIgnoreCase)||
  x.StartsWith("--employment-mark-inactive=",StringComparison.OrdinalIgnoreCase));
