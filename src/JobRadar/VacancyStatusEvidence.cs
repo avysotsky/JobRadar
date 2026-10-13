@@ -48,6 +48,10 @@ public static class VacancyStatusEvidence
    if(title.Length is >0 and <=500 && Closed.IsMatch(title))
     return new VacancyStatusObservation(false,"html:explicit-closed-heading");
   }
+  // Browser title is provider-owned metadata, not vacancy body content.
+  var pageTitle=Parsers.Clean(doc.QuerySelector("head > title")?.TextContent);
+  if(pageTitle.Length is >0 and <=500 && Closed.IsMatch(pageTitle))
+   return new VacancyStatusObservation(false,"html:explicit-closed-title");
   foreach(var ignored in doc.QuerySelectorAll("script,style,footer,nav,aside"))ignored.Remove();
   var body=Parsers.Clean(doc.Body?.TextContent??"");
   // This fallback covers explicit, short standalone closed-message pages.
