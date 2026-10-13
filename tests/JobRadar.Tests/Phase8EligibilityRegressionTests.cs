@@ -55,6 +55,33 @@ public sealed class Phase8EligibilityRegressionTests
   Assert.False(optional.RequiresReview);
  }
 
+ [Theory]
+ [InlineData("Remote EU only. ASP.NET Core REST API PostgreSQL EF Core.")]
+ [InlineData("Fully remote (EU only). ASP.NET Core REST API PostgreSQL EF Core.")]
+ [InlineData("EU-only remote position. ASP.NET Core REST API PostgreSQL EF Core.")]
+ [InlineData("Remote UK only. ASP.NET Core REST API PostgreSQL EF Core.")]
+ public void CountryOnlyRemoteVariationsRequireHumanReview(string description)
+ {
+  var title="Middle .NET Backend Developer";
+  var signals=VacancyEligibility.Analyze(title,description);
+  Assert.True(signals.LocationRestricted);
+  var snapshot=new VacancySnapshot("fixture","https://example.org/jobs/eu-only",
+   title,null,null,description,true,null,DateTimeOffset.UtcNow,
+   DateTimeOffset.UtcNow,[]);
+  Assert.Equal(FitBucket.NeedsReview,VacancyTriage.Assess(snapshot).Bucket);
+ }
+
+ [Theory]
+ [InlineData("Fully remote in Ukraine, EU timezone overlap.")]
+ [InlineData("Remote work across time zones, EU hours preferred.")]
+ public void EuTimezoneStatementsDoNotRequireEuResidency(string description)
+ {
+  var signals=VacancyEligibility.Analyze(
+   "Middle .NET Backend Developer",
+   description+" ASP.NET Core REST API PostgreSQL EF Core.");
+  Assert.False(signals.LocationRestricted);
+ }
+
  [Fact]
  public void ResidencyAndRelocationAreReviewGatesNotAutomaticExclusions()
  {
