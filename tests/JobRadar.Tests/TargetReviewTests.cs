@@ -94,8 +94,10 @@ public sealed class TargetReviewTests
    StatusEvidence="test:positive",StatusCheckedAt=Now.AddDays(-5)};
   var item=Assert.Single(TargetReview.Analyze([job],
    new Dictionary<string,EmploymentDecision>(),1,Now).Vacancies);
-  Assert.Equal("HISTORICAL_POSITIVE_STATUS",item.OpeningEvidence);
-  Assert.NotEqual(FitBucket.LikelyFit,
-   VacancyRecommendationGates.Apply(VacancyTriage.Assess(job),Now).Bucket);
+  Assert.Equal("HISTORICAL_POSITIVE_STATUS_STALE",item.OpeningEvidence);
+  Assert.Contains(item.Warnings,
+   x=>x.StartsWith("POSITIVE_STATUS_STALE:",StringComparison.Ordinal));
+  // Raw suitability is not provider-current opening. This operator-only
+  // report must not imply live verification from an old status stamp.
  }
 }
