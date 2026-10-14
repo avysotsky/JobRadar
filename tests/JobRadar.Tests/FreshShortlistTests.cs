@@ -166,6 +166,27 @@ public sealed class FreshShortlistTests
  }
 
  [Fact]
+ public void FirstRecordedDoesNotConflateOldEmployerPostingWithNewFeedObservation()
+ {
+  var oldPosting=Job("dou","88","Middle .NET Backend") with
+  {
+   PublishedAt=Now.AddDays(-30)
+  };
+  var futurePosting=Job("dou","89","Middle .NET Backend") with
+  {
+   PublishedAt=Now.AddDays(1)
+  };
+  var result=Shortlist([oldPosting,futurePosting]);
+  var old=Assert.Single(result.Vacancies,x=>x.Url==oldPosting.Url);
+  var future=Assert.Single(result.Vacancies,x=>x.Url==futurePosting.Url);
+  Assert.Contains(old.Warnings,x=>
+   x.StartsWith("POSTED_BEFORE_DISCOVERY_WINDOW:",StringComparison.Ordinal));
+  Assert.Contains(future.Warnings,x=>
+   x.StartsWith("FUTURE_PUBLICATION_DATE:",StringComparison.Ordinal));
+  Assert.Equal(2,result.RecentRecordedJobs);
+ }
+
+ [Fact]
  public void InvalidTotalFailsBeforeCalculatingCandidateCounts()
  {
   var job=Job("dou","70","Middle .NET Backend");
