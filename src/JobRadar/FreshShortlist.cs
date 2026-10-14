@@ -70,11 +70,22 @@ public static class FreshShortlist
    var recency=job.LastSeen>now?"FUTURE_LAST_SEEN_UNVERIFIED":
     now-job.LastSeen<=TimeSpan.FromHours(24)
      ?"DISCOVERED_WITHIN_24H":"LAST_SEEN_OVER_24H";
+   // Newly seen by JobRadar is not necessarily newly posted by the
+   // employer. Keep it for manual review but label the distinction.
+   var warnings=assessed.Warnings;
+   if(job.PublishedAt is { } posted && posted<since)
+    warnings=warnings.Concat(new[]{
+     "POSTED_BEFORE_DISCOVERY_WINDOW: job was published before the 7-day first-observed window"
+    }).ToArray();
+   if(job.PublishedAt is { } future && future>now)
+    warnings=warnings.Concat(new[]{
+     "FUTURE_PUBLICATION_DATE: stored provider posting timestamp is in the future"
+    }).ToArray();
    results.Add(new FreshShortlistItem(job.Source,job.Url,job.Title,job.Company,
     first,job.LastSeen,job.PublishedAt,job.StatusCheckedAt,
     status,recency,assessed.Bucket,tier,
     assessed.WorkMode,assessed.Score,job.HasFullText,
-    assessed.Reasons,assessed.Warnings));
+    assessed.Reasons,warnings));
   }
   var sorted=results.OrderBy(x=>x.Bucket==FitBucket.LikelyFit?0:
     x.ReviewTier==VacancyReviewTier.TargetDotNetBackend?1:2)
