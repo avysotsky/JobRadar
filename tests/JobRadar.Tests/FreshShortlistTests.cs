@@ -118,7 +118,7 @@ public sealed class FreshShortlistTests
  [InlineData("dou","https://jobs.dou.ua/vacancies/1/#test")]
  [InlineData("djinni","https://djinni.co:444/jobs/1-example/")]
  [InlineData("wwr","https://weworkremotely.com.evil.org/remote-jobs/a")]
- [InlineData("robota","https://robota.ua@evil.com/company1/vacancy2")]
+ [InlineData("robota","https://robota.ua.evil.invalid/company1/vacancy2")]
  [InlineData("unknown","https://jobs.dou.ua/vacancies/1/")]
  [InlineData("dou","https://jobs.dou.ua/redirect?to=https://evil.example/")]
  [InlineData("dou","https://jobs.dou.ua/vacancies/123/?ref=tracker")]
