@@ -16,7 +16,7 @@ Top 30 entries include source, original URL, title, company, review tier and rea
 
 Sorting: target .NET Backend first, partial .NET second, explicit remote ahead of unverified work mode, complete job text ahead of preview, then freshness, score, source and URL.
 
-The `OpeningEvidence` marker only distinguishes `OPEN_UNVERIFIED` from `HISTORICAL_POSITIVE_STATUS`; neither implies live application acceptance. The report is not deduplicated across different boards based solely on a similar title; such merging requires verified canonical employer identity. The report shows total stored, examined and omitted-by-snapshot-limit; exit code 4 on truncated input, else 0. The displayed 30-item cap is separate from DB snapshot omission.
+The `OpeningEvidence` marker distinguishes `OPEN_UNVERIFIED`, `POSITIVE_STATUS_RECORDED_WITHIN_24H` and `HISTORICAL_POSITIVE_STATUS_STALE` (with an explicit warning). Even a recent stored positive observation is timestamped evidence, not proof of live application acceptance. The report is not deduplicated across different boards based solely on a similar title; such merging requires verified canonical employer identity. The report shows total stored, examined and omitted-by-snapshot-limit; exit code 4 on truncated input, else 0. The displayed 30-item cap is separate from DB snapshot omission.
 
 ## Acceptance
 
