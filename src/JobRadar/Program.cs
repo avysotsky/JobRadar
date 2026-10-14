@@ -279,6 +279,30 @@ if(args.Contains("--coverage-review"))
   return 4;
  }
 }
+if(args.Contains("--cross-board-duplicates"))
+{
+ // Read-only, bounded high-confidence duplicate hints for DOU + Djinni
+ // complete descriptions. Never transfer Applied/Inactive or alter jobs.
+ try
+ {
+  var jobs=await storage.ReadVacanciesForTriageAsync(
+   Math.Clamp(options.ExportMaxRecords,1,CrossBoardDuplicateAudit.MaxInput),
+   CancellationToken.None);
+  var total=await storage.CountVacanciesForTriageAsync(CancellationToken.None);
+  var decisions=await storage.ReadEmploymentDecisionsAsync(CancellationToken.None);
+  var report=CrossBoardDuplicateAudit.Analyze(
+   jobs,decisions,total,DateTimeOffset.UtcNow);
+  Console.WriteLine(JsonSerializer.Serialize(report,
+   new JsonSerializerOptions(JsonlOutput.Options){WriteIndented=true}));
+  return report.OmittedBySnapshotLimit>0 || report.OmittedPairs>0?4:0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Cross-board duplicate audit unavailable: "+
+   e.GetType().Name);
+  return 4;
+ }
+}
 if(args.Contains("--query-yield-trend"))
 {
  // Offline, bounded historical analysis. No provider HTTP, scheduling,
