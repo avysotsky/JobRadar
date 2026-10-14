@@ -279,6 +279,30 @@ if(args.Contains("--coverage-review"))
   return 4;
  }
 }
+if(args.Contains("--fresh-shortlist"))
+{
+ // Local-only first-recorded discovery shortlist. Does not issue provider
+ // HTTP requests or update job statuses, decisions, or query schedules.
+ try
+ {
+  var now=DateTimeOffset.UtcNow;
+  var jobs=await storage.ReadVacanciesForTriageAsync(
+   Math.Clamp(options.ExportMaxRecords,1,50000),CancellationToken.None);
+  var total=await storage.CountVacanciesForTriageAsync(CancellationToken.None);
+  var first=await storage.ReadFirstRecordedDiscoveriesAsync(
+   now.AddDays(-FreshShortlist.LookbackDays),now,50000,CancellationToken.None);
+  var decisions=await storage.ReadEmploymentDecisionsAsync(CancellationToken.None);
+  var report=FreshShortlist.Analyze(jobs,first,decisions,total,now);
+  Console.WriteLine(JsonSerializer.Serialize(report,
+   new JsonSerializerOptions(JsonlOutput.Options){WriteIndented=true}));
+  return report.OmittedBySnapshotLimit>0?4:0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Fresh shortlist unavailable: "+e.GetType().Name);
+  return 4;
+ }
+}
 if(args.Contains("--query-yield-trend"))
 {
  // Offline, bounded historical analysis. No provider HTTP, scheduling,
