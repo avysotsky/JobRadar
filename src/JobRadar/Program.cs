@@ -136,6 +136,26 @@ if(args.Contains("--freelancer-once"))
   return 4;
  }
 }
+// Explicit historical-export fallback: runs before any PostgreSQL initialization.
+var targetReviewFileArg=args.FirstOrDefault(x=>
+ x.StartsWith("--target-review-file=",StringComparison.OrdinalIgnoreCase));
+if(targetReviewFileArg is not null)
+{
+ try
+ {
+  var path=targetReviewFileArg["--target-review-file=".Length..];
+  var report=await TargetReviewFile.AnalyzeFileAsync(path,CancellationToken.None);
+  Console.WriteLine(JsonSerializer.Serialize(report,
+   new JsonSerializerOptions(JsonlOutput.Options){WriteIndented=true}));
+  return 0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Offline target review unavailable: "+e.GetType().Name+
+   ": "+e.Message);
+  return 4;
+ }
+}
 var cs=Environment.GetEnvironmentVariable("JOBRADAR_DB") ?? options.ConnectionString;
 var storage=new Storage(cs);
 try{await storage.Initialize(CancellationToken.None);}catch(Exception e){Console.Error.WriteLine("Database unavailable: "+e.Message);return 3;}
