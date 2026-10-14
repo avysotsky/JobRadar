@@ -44,14 +44,22 @@ public static class TargetReview
       VacancyReviewTier.PartialDotNetEvidence))
     continue;
    var evidence=vacancy.IsOpen==true &&
-    vacancy.StatusCheckedAt is not null &&
-    !string.IsNullOrWhiteSpace(vacancy.StatusEvidence)
-     ? "HISTORICAL_POSITIVE_STATUS":"OPEN_UNVERIFIED";
+    vacancy.StatusCheckedAt is { } checkedAt &&
+    checkedAt<=now && !string.IsNullOrWhiteSpace(vacancy.StatusEvidence)
+     ? now-checkedAt<=TimeSpan.FromHours(24)
+       ? "POSITIVE_STATUS_RECORDED_WITHIN_24H"
+       : "HISTORICAL_POSITIVE_STATUS_STALE"
+     : "OPEN_UNVERIFIED";
+   var warnings=item.Warnings;
+   if(evidence=="HISTORICAL_POSITIVE_STATUS_STALE")
+    warnings=warnings.Concat(new[]{
+     "POSITIVE_STATUS_STALE: historical provider opening evidence is older than 24 hours"
+    }).ToArray();
    list.Add(new TargetReviewItem(
     vacancy.Source,vacancy.Url,vacancy.Title,vacancy.Company,
     item.Score,item.WorkMode,priority.Tier,priority.Reason,
     vacancy.HasFullText,vacancy.LastSeen,vacancy.IsOpen,
-    evidence,item.Reasons,item.Warnings));
+    evidence,item.Reasons,warnings));
   }
   var ordered=list.OrderBy(x=>x.Tier)
    .ThenBy(x=>x.WorkMode==WorkMode.Remote?0:1)
