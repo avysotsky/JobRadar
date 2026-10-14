@@ -279,6 +279,27 @@ if(args.Contains("--coverage-review"))
   return 4;
  }
 }
+if(args.Contains("--target-review"))
+{
+ // A human-review-only shortlist, calculated from saved vacancies.
+ // No live provider requests, status assertions or automatic applications.
+ try
+ {
+  var jobs=await storage.ReadVacanciesForTriageAsync(
+   Math.Clamp(options.ExportMaxRecords,1,50000),CancellationToken.None);
+  var total=await storage.CountVacanciesForTriageAsync(CancellationToken.None);
+  var decisions=await storage.ReadEmploymentDecisionsAsync(CancellationToken.None);
+  var report=TargetReview.Analyze(jobs,decisions,total,DateTimeOffset.UtcNow);
+  Console.WriteLine(JsonSerializer.Serialize(report,
+   new JsonSerializerOptions(JsonlOutput.Options){WriteIndented=true}));
+  return report.OmittedBySnapshotLimit>0?4:0;
+ }
+ catch(Exception e) when(e is not OperationCanceledException)
+ {
+  Console.Error.WriteLine("Target review unavailable: "+e.GetType().Name);
+  return 4;
+ }
+}
 if(args.Contains("--query-yield-trend"))
 {
  // Offline, bounded historical analysis. No provider HTTP, scheduling,
